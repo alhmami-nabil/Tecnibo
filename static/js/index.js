@@ -19,12 +19,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
 document.querySelectorAll('.title').forEach(el => {
 
-  // 1️⃣ Split title + wrap VARIANTE / VARIANT
-  el.innerHTML = el.textContent.replace(
-    /\s+((?:VARIANTE|VARIANT)\s+\d+)$/i,
-    "<br><span class='variante'>$1</span>"
-  );
-
   // 2️⃣ Dynamic font sizing
   const textLength = el.textContent.trim().length;
 

@@ -8,11 +8,7 @@ __pycache__/
 .idea/
 .vscode/
 
-# Database
-*.db
-
 # Temporary / OS files
 *.log
 *.tmp
 temp.ps
-local_history.patch
