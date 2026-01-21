@@ -93,70 +93,93 @@ window.addEventListener('DOMContentLoaded', function() {
 
                     if (data.error) {
                         console.error("Error loading fiche:", data.error);
+                        alert('Erreur: ' + data.error);
                         return;
                     }
 
-                    const fr = data.fr;
+                    const fr = data.fr || {};
                     const nl = data.nl || {};
 
-    /* ------------------------
-       FILL FR FIELDS
-    ------------------------ */
-    for (const [k, v] of Object.entries(fr)) {
-      const input = document.querySelector(`[name="${k}"]`);
-      if (input && input.type !== "file") {
-        input.value = v || "";
-      }
-    }
+                    console.log('✅ Loaded FR data:', fr);
+                    console.log('✅ Loaded NL data:', nl);
 
-    /* ------------------------
-       FILL NL HIDDEN FIELDS
-    ------------------------ */
-    for (const [k, v] of Object.entries(nl)) {
-      const inputNL = document.getElementById(k + "_nl");
-      if (inputNL) {
-        inputNL.value = v || "";
-      }
-    }
+                    /* ------------------------
+                       FILL FR FIELDS
+                    ------------------------ */
+                    for (const [k, v] of Object.entries(fr)) {
+                        if (k === 'id' || k === 'langue' || k === 'type') continue;
 
-    /* ------------------------
-       IMAGES (FR ONLY)
-    ------------------------ */
-    if (fr.photo_produit) {
-      const img = document.getElementById('photoPreview');
-      if (img) {
-        img.src = '/static/' + fr.photo_produit;
-        img.classList.remove('d-none');
-      }
-    }
+                        const input = document.querySelector(`[name="${k}"]`);
+                        if (input && input.type !== "file") {
+                            input.value = v || "";
+                        }
+                    }
 
-    if (fr.vue_eclatee_image) {
-      const img = document.getElementById('explodedPreview');
-      if (img) {
-        img.src = '/static/' + fr.vue_eclatee_image;
-        img.classList.remove('d-none');
-      }
-    }
+                    /* ------------------------
+                       FILL NL HIDDEN FIELDS
+                    ------------------------ */
+                    for (const [k, v] of Object.entries(nl)) {
+                        if (k === 'id' || k === 'langue' || k === 'type') continue;
 
-    /* ------------------------
-       TECHNICAL DRAWINGS
-    ------------------------ */
-    for (let i = 1; i <= 6; i++) {
-      const dessin = fr['dessin_technique_' + i];
-      if (dessin) {
-        const img = document.getElementById('dessinPreview' + i);
-        if (img) {
-          img.src = '/static/' + dessin;
-          img.classList.remove('d-none');
-        }
-      }
-    }
-  })
-  .catch(err => {
-    console.error("Fetch error:", err);
-    if (loadingOverlay) loadingOverlay.classList.remove('active');
-  });
+                        const inputNL = document.getElementById(k + "_nl");
+                        if (inputNL) {
+                            inputNL.value = v || "";
+                            console.log(`Set ${k}_nl = ${v}`);
+                        }
+                    }
 
+                    /* ------------------------
+                       IMAGES (FR ONLY)
+                    ------------------------ */
+                    if (fr.photo_produit) {
+                        const img = document.getElementById('photoPreview');
+                        if (img) {
+                            img.src = '/static/' + fr.photo_produit;
+                            img.classList.remove('d-none');
+                        }
+                    } else {
+                        const img = document.getElementById('photoPreview');
+                        if (img) {
+                            img.src = '';
+                            img.classList.add('d-none');
+                        }
+                    }
+
+                    if (fr.vue_eclatee_image) {
+                        const img = document.getElementById('explodedPreview');
+                        if (img) {
+                            img.src = '/static/' + fr.vue_eclatee_image;
+                            img.classList.remove('d-none');
+                        }
+                    } else {
+                        const img = document.getElementById('explodedPreview');
+                        if (img) {
+                            img.src = '';
+                            img.classList.add('d-none');
+                        }
+                    }
+
+                    /* ------------------------
+                       TECHNICAL DRAWINGS
+                    ------------------------ */
+                    for (let i = 1; i <= 6; i++) {
+                        const dessin = fr['dessin_technique_' + i];
+                        const img = document.getElementById('dessinPreview' + i);
+
+                        if (dessin && img) {
+                            img.src = '/static/' + dessin;
+                            img.classList.remove('d-none');
+                        } else if (img) {
+                            img.src = '';
+                            img.classList.add('d-none');
+                        }
+                    }
+                })
+                .catch(err => {
+                    console.error("Fetch error:", err);
+                    if (loadingOverlay) loadingOverlay.classList.remove('active');
+                    alert('Erreur de chargement: ' + err.message);
+                });
         });
     }
 
@@ -169,6 +192,26 @@ window.addEventListener('DOMContentLoaded', function() {
         updateRefSelect.value = refFromUrl;
         updateRefSelect.dispatchEvent(new Event('change'));
     }
+
+    // ===== TYPE SWITCHING =====
+    const typeCloison = document.getElementById('typeCloison');
+    const typePorte = document.getElementById('typePorte');
+
+    if (typeCloison) {
+        typeCloison.addEventListener('change', function() {
+            if (this.checked) {
+                window.location.href = "/?type=Cloison";
+            }
+        });
+    }
+
+    if (typePorte) {
+        typePorte.addEventListener('change', function() {
+            if (this.checked) {
+                window.location.href = "/?type=Porte";
+            }
+        });
+    }
 });
 
 // ============================================
@@ -178,12 +221,14 @@ window.addEventListener('DOMContentLoaded', function() {
 function clearForm() {
     console.log('🧹 Clearing form...');
 
-    document.querySelectorAll('input[type="text"], textarea').forEach(input => {
-        if (input.id !== 'updateRef') {
+    // Clear all text inputs and textareas except updateRef
+    document.querySelectorAll('input[type="text"], input[type="hidden"][name$="_nl"], textarea').forEach(input => {
+        if (input.id !== 'updateRef' && input.name !== 'type') {
             input.value = '';
         }
     });
 
+    // Clear all previews
     document.querySelectorAll('.preview').forEach(img => {
         img.src = '';
         img.classList.add('d-none');
@@ -191,8 +236,14 @@ function clearForm() {
         img.style.border = '';
     });
 
+    // Reset deletion flags
     document.querySelectorAll('input[name^="delete_"]').forEach(input => {
         input.value = 'false';
+    });
+
+    // Clear file inputs
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+        input.value = '';
     });
 
     const previousRef = document.getElementById('previous_ref');
@@ -208,12 +259,16 @@ function markImageForDeletion(fieldName, previewId) {
     if (!confirmed) return;
 
     const deleteInput = document.getElementById(`delete_${fieldName}`);
-    if (deleteInput) deleteInput.value = "true";
+    if (deleteInput) {
+        deleteInput.value = "true";
+        console.log(`Marked ${fieldName} for deletion`);
+    }
 
     const preview = document.getElementById(previewId);
     if (preview) {
         preview.classList.add('deleted');
-        preview.style.border = '2px solid red';
+        preview.style.border = '3px solid red';
+        preview.style.opacity = '0.5';
     }
 
     const fileInput = document.querySelector(`input[name="${fieldName}"]`);
@@ -224,17 +279,23 @@ function markImageForDeletion(fieldName, previewId) {
 
 function previewImage(input, previewId) {
     const preview = document.getElementById(previewId);
+    if (!preview) return;
+
     if (input.files && input.files[0]) {
         const reader = new FileReader();
         reader.onload = e => {
             preview.src = e.target.result;
             preview.classList.remove('d-none', 'deleted');
             preview.style.border = '';
+            preview.style.opacity = '1';
 
             const deleteInput = document.getElementById(`delete_${input.name}`);
             if (deleteInput) deleteInput.value = "false";
         };
         reader.readAsDataURL(input.files[0]);
+    } else {
+        preview.src = '';
+        preview.classList.add('d-none');
     }
 }
 
@@ -243,7 +304,10 @@ function handleImageUpload(input) {
     const errorDiv = document.getElementById('imgError');
     const preview = document.getElementById('explodedPreview');
 
-    if (!file) return;
+    if (!file) {
+        if (errorDiv) errorDiv.style.display = "none";
+        return;
+    }
 
     const img = new Image();
     const reader = new FileReader();
@@ -252,15 +316,20 @@ function handleImageUpload(input) {
         img.src = e.target.result;
         img.onload = function() {
             if (img.width !== 700 || img.height !== 900) {
-                errorDiv.style.display = "block";
+                if (errorDiv) errorDiv.style.display = "block";
                 input.value = "";
-                preview.src = "";
-                preview.classList.add('d-none');
+                if (preview) {
+                    preview.src = "";
+                    preview.classList.add('d-none');
+                }
             } else {
-                errorDiv.style.display = "none";
-                preview.src = e.target.result;
-                preview.classList.remove('d-none', 'deleted');
-                preview.style.border = '';
+                if (errorDiv) errorDiv.style.display = "none";
+                if (preview) {
+                    preview.src = e.target.result;
+                    preview.classList.remove('d-none', 'deleted');
+                    preview.style.border = '';
+                    preview.style.opacity = '1';
+                }
 
                 const deleteInput = document.getElementById('delete_vue_eclatee_image');
                 if (deleteInput) deleteInput.value = "false";
@@ -292,19 +361,29 @@ function checkExactSize(input, previewId, errorId, index) {
         }
 
         if (img.width !== requiredWidth || img.height !== requiredHeight) {
-            errorMsg.classList.remove('d-none');
-            errorMsg.style.display = "block";
-            preview.classList.add("d-none");
-            preview.src = "";
+            if (errorMsg) {
+                errorMsg.classList.remove('d-none');
+                errorMsg.style.display = "block";
+            }
+            if (preview) {
+                preview.classList.add("d-none");
+                preview.src = "";
+            }
             input.value = "";
             return;
         }
 
-        errorMsg.classList.add('d-none');
-        errorMsg.style.display = "none";
-        preview.src = img.src;
-        preview.classList.remove("d-none", "deleted");
-        preview.style.border = '';
+        if (errorMsg) {
+            errorMsg.classList.add('d-none');
+            errorMsg.style.display = "none";
+        }
+
+        if (preview) {
+            preview.src = img.src;
+            preview.classList.remove("d-none", "deleted");
+            preview.style.border = '';
+            preview.style.opacity = '1';
+        }
 
         const deleteInput = document.getElementById(`delete_${input.name}`);
         if (deleteInput) deleteInput.value = "false";
@@ -317,9 +396,16 @@ function checkExactSize(input, previewId, errorId, index) {
 
 function openEditorModal(file) {
     const modal = document.getElementById('editorModal');
+    if (!modal) return;
+
     modal.style.display = 'flex';
 
     editorCanvas = document.getElementById('editorCanvas');
+    if (!editorCanvas) {
+        console.error('Editor canvas not found');
+        return;
+    }
+
     editorCtx = editorCanvas.getContext('2d');
 
     editorAnnotations = [];
@@ -335,6 +421,14 @@ function openEditorModal(file) {
     };
     reader.readAsDataURL(file);
 
+    // Remove any existing listeners
+    editorCanvas.onclick = null;
+    editorCanvas.oncontextmenu = null;
+    editorCanvas.onmousedown = null;
+    editorCanvas.onmousemove = null;
+    editorCanvas.onmouseup = null;
+
+    // Add new listeners
     editorCanvas.onclick = handleEditorClick;
     editorCanvas.oncontextmenu = handleEditorRightClick;
     editorCanvas.onmousedown = handleMouseDown;
@@ -344,7 +438,7 @@ function openEditorModal(file) {
 
 function closeEditor() {
     const modal = document.getElementById('editorModal');
-    modal.style.display = 'none';
+    if (modal) modal.style.display = 'none';
 
     if (editorCanvas) {
         editorCanvas.onclick = null;
@@ -353,10 +447,14 @@ function closeEditor() {
         editorCanvas.onmousemove = null;
         editorCanvas.onmouseup = null;
     }
+
+    // Reset state
+    isDragging = false;
+    draggedAnnotation = null;
 }
 
 function drawEditor() {
-    if (!editorImage) return;
+    if (!editorImage || !editorCtx) return;
 
     editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
     editorCtx.drawImage(editorImage, 0, 0, 700, 900);
@@ -364,6 +462,7 @@ function drawEditor() {
     editorAnnotations.forEach(ann => {
         const lineStart = ann.side === 'left' ? 50 : 650;
 
+        // Draw line
         editorCtx.strokeStyle = 'black';
         editorCtx.lineWidth = 2;
         editorCtx.beginPath();
@@ -371,16 +470,19 @@ function drawEditor() {
         editorCtx.lineTo(ann.x, ann.y);
         editorCtx.stroke();
 
+        // Draw small circle at annotation point
         editorCtx.fillStyle = 'black';
         editorCtx.beginPath();
         editorCtx.arc(ann.x, ann.y, 3, 0, Math.PI * 2);
         editorCtx.fill();
 
+        // Draw big circle with number
         editorCtx.fillStyle = 'black';
         editorCtx.beginPath();
         editorCtx.arc(lineStart, ann.y, 20, 0, Math.PI * 2);
         editorCtx.fill();
 
+        // Draw number
         editorCtx.fillStyle = 'white';
         editorCtx.font = 'bold 20px Arial';
         editorCtx.textAlign = 'center';
@@ -394,6 +496,7 @@ function handleMouseDown(e) {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    // Check if clicking on a small circle (annotation point)
     draggedAnnotation = editorAnnotations.find(ann => {
         const dist = Math.sqrt(Math.pow(x - ann.x, 2) + Math.pow(y - ann.y, 2));
         return dist <= 5;
@@ -403,11 +506,25 @@ function handleMouseDown(e) {
         isDragging = true;
         editorCanvas.style.cursor = 'move';
         e.preventDefault();
+        e.stopPropagation();
     }
 }
 
 function handleMouseMove(e) {
-    if (!isDragging || !draggedAnnotation) return;
+    if (!isDragging || !draggedAnnotation) {
+        // Show pointer when hovering over annotation points
+        const rect = editorCanvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const isOverAnnotation = editorAnnotations.some(ann => {
+            const dist = Math.sqrt(Math.pow(x - ann.x, 2) + Math.pow(y - ann.y, 2));
+            return dist <= 5;
+        });
+
+        editorCanvas.style.cursor = isOverAnnotation ? 'pointer' : 'default';
+        return;
+    }
 
     const rect = editorCanvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -435,6 +552,7 @@ function handleEditorClick(e) {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    // Check if clicking on existing annotation point
     const clickedOnAnnotation = editorAnnotations.some(ann => {
         const dist = Math.sqrt(Math.pow(x - ann.x, 2) + Math.pow(y - ann.y, 2));
         return dist <= 5;
@@ -442,9 +560,10 @@ function handleEditorClick(e) {
 
     if (clickedOnAnnotation) return;
 
+    // Add new annotation
     const side = x < 350 ? 'left' : 'right';
     const num = prompt('Entrez le numéro d\'annotation:', nextAnnotationId);
-    if (num === null) return;
+    if (num === null || num.trim() === '') return;
 
     const id = parseInt(num);
     if (isNaN(id) || id < 1) {
@@ -452,11 +571,22 @@ function handleEditorClick(e) {
         return;
     }
 
+    // Check if ID already exists
+    const existingAnnotation = editorAnnotations.find(ann => ann.id === id);
+    if (existingAnnotation) {
+        alert(`Le numéro ${id} existe déjà. Veuillez choisir un autre numéro.`);
+        return;
+    }
+
     editorAnnotations.push({ id, x, y, side });
     nextAnnotationId = Math.max(nextAnnotationId, id + 1);
 
     drawEditor();
-    document.getElementById('editorStatus').textContent = `${editorAnnotations.length} annotation(s)`;
+
+    const statusEl = document.getElementById('editorStatus');
+    if (statusEl) {
+        statusEl.textContent = `${editorAnnotations.length} annotation(s)`;
+    }
 }
 
 function handleEditorRightClick(e) {
@@ -466,6 +596,7 @@ function handleEditorRightClick(e) {
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
+    // Find annotation to delete (clicking on big circle)
     const toDelete = editorAnnotations.findIndex(ann => {
         const lineStart = ann.side === 'left' ? 50 : 650;
         const dist = Math.sqrt(Math.pow(x - lineStart, 2) + Math.pow(y - ann.y, 2));
@@ -473,9 +604,14 @@ function handleEditorRightClick(e) {
     });
 
     if (toDelete !== -1) {
+        const deletedId = editorAnnotations[toDelete].id;
         editorAnnotations.splice(toDelete, 1);
         drawEditor();
-        document.getElementById('editorStatus').textContent = `${editorAnnotations.length} annotation(s)`;
+
+        const statusEl = document.getElementById('editorStatus');
+        if (statusEl) {
+            statusEl.textContent = `${editorAnnotations.length} annotation(s) - Supprimé: ${deletedId}`;
+        }
     }
 
     return false;
@@ -486,7 +622,11 @@ function clearAllAnnotations() {
         editorAnnotations = [];
         nextAnnotationId = 1;
         drawEditor();
-        document.getElementById('editorStatus').textContent = '0 annotation(s)';
+
+        const statusEl = document.getElementById('editorStatus');
+        if (statusEl) {
+            statusEl.textContent = '0 annotation(s)';
+        }
     }
 }
 
@@ -496,7 +636,11 @@ function saveEditorAnnotations() {
         return;
     }
 
-    document.getElementById('editorStatus').textContent = '💾 Enregistrement...';
+    const statusEl = document.getElementById('editorStatus');
+    if (statusEl) {
+        statusEl.textContent = '💾 Enregistrement...';
+        statusEl.style.color = '#2196F3';
+    }
 
     fetch('/save_annotations', {
         method: 'POST',
@@ -509,28 +653,40 @@ function saveEditorAnnotations() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            document.getElementById('editorStatus').textContent = '✔️ Enregistré!';
-            document.getElementById('editorStatus').style.color = '#4CAF50';
+            if (statusEl) {
+                statusEl.textContent = '✔️ Enregistré!';
+                statusEl.style.color = '#4CAF50';
+            }
 
             const preview = document.getElementById('explodedPreview');
-            preview.src = '/static/' + data.image_path + '?t=' + Date.now();
-            preview.classList.remove('d-none');
+            if (preview) {
+                preview.src = '/static/' + data.image_path + '?t=' + Date.now();
+                preview.classList.remove('d-none');
+            }
 
             setTimeout(() => closeEditor(), 800);
         } else {
             alert('Erreur: ' + (data.error || 'Unknown error'));
-            document.getElementById('editorStatus').style.color = '#f44336';
+            if (statusEl) {
+                statusEl.textContent = '❌ Erreur';
+                statusEl.style.color = '#f44336';
+            }
         }
     })
     .catch(error => {
         console.error('Error:', error);
         alert('Erreur lors de l\'enregistrement: ' + error.message);
-        document.getElementById('editorStatus').style.color = '#f44336';
+        if (statusEl) {
+            statusEl.textContent = '❌ Erreur';
+            statusEl.style.color = '#f44336';
+        }
     })
     .finally(() => {
         setTimeout(() => {
-            document.getElementById('editorStatus').textContent = '';
-            document.getElementById('editorStatus').style.color = '#2196F3';
+            if (statusEl) {
+                statusEl.textContent = '';
+                statusEl.style.color = '#2196F3';
+            }
         }, 2000);
     });
 }
@@ -542,7 +698,7 @@ function saveEditorAnnotations() {
 function GOficheTechnique() {
     const cpid = document.getElementById("updateRef").value;
     if (!cpid) {
-        alert('Sélectionnez une Cpid');
+        alert('Sélectionnez une CPID');
         return;
     }
     window.location.href = `/index?cpid=${cpid}`;
@@ -551,11 +707,11 @@ function GOficheTechnique() {
 function confirmDelete() {
     const ref = document.getElementById("updateRef").value;
     if (!ref) {
-        alert('Sélectionnez une Cpid à supprimer');
+        alert('Sélectionnez une CPID à supprimer');
         return;
     }
 
-    if (confirm(`Supprimer la fiche "${ref}" ?`)) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la fiche "${ref}" (versions FR et NL) ?`)) {
         const form = document.createElement("form");
         form.method = "POST";
         form.action = "/delete_fiche";
@@ -568,7 +724,8 @@ function confirmDelete() {
         const typeInput = document.createElement("input");
         typeInput.type = "hidden";
         typeInput.name = "type";
-        typeInput.value = document.querySelector('input[name="type"]:checked').value;
+        const checkedType = document.querySelector('input[name="type"]:checked');
+        typeInput.value = checkedType ? checkedType.value : 'Cloison';
 
         form.appendChild(input);
         form.appendChild(typeInput);
@@ -576,34 +733,3 @@ function confirmDelete() {
         form.submit();
     }
 }
-
-
-
-
-  // Type switching with forced navigation
-  document.addEventListener('DOMContentLoaded', function() {
-      const typeCloison = document.getElementById('typeCloison');
-      const typePorte = document.getElementById('typePorte');
-      const currentType = "{{ type_selected }}";
-
-      function switchType(newType) {
-          if (newType !== currentType) {
-              // Force immediate navigation
-              window.location.href = "/?type=" + newType;
-          }
-      }
-
-      typeCloison.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          this.checked = true;
-          switchType('Cloison');
-      });
-
-      typePorte.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          this.checked = true;
-          switchType('Porte');
-      });
-  });
