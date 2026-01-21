@@ -1,0 +1,18 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE files
+.idea/
+.vscode/
+
+# Database
+*.db
+
+# Temporary / OS files
+*.log
+*.tmp
+temp.ps
+local_history.patch

@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tecnibo - Fiche Technique</title>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='home.css') }}">
+  <link rel="stylesheet" href="{{ url_for('static', filename='editor.css') }}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    .image-preview-container {
+      position: relative;
+      display: inline-block;
+    }
+
+    .delete-image-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      background: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 30px;
+      height: 30px;
+      cursor: pointer;
+      font-size: 16px;
+      display: none;
+      z-index: 10;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    }
+
+    .delete-image-btn:hover { background: #c82333; }
+    .image-preview-container:hover .delete-image-btn { display: block; }
+    .preview.deleted { opacity: 0.3; filter: grayscale(100%); }
+  </style>
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Editor Modal -->
+  <div id="editorModal">
+    <div class="editor-container">
+      <div class="editor-instructions">
+        <strong>📝 Instructions:</strong>
+        <ul style="margin: 10px 0;">
+          <li>Cliquez sur l'image pour ajouter une annotation</li>
+          <li>Entrez un numéro quand demandé</li>
+          <li>Côté gauche = annotations gauche, Côté droit = annotations droite</li>
+          <li>Cliquez sur un petit cercle pour le déplacer</li>
+          <li>Clic droit sur un grand cercle pour le supprimer</li>
+          <li>Cliquez sur "Enregistrer" quand terminé</li>
+        </ul>
+      </div>
+      <div class="editor-toolbar">
+        <button class="btn-save-editor btn btn-success" onclick="saveEditorAnnotations()">💾 Enregistrer</button>
+        <button class="btn-clear-editor btn btn-danger" onclick="clearAllAnnotations()">🗑️ Effacer tout</button>
+        <span id="editorStatus" class="ms-3 fw-bold"></span>
+        <button class="btn-close-editor btn btn-secondary" onclick="closeEditor()">✖ Fermer</button>
+      </div>
+      <canvas id="editorCanvas" width="700" height="900"></canvas>
+    </div>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container mt-3">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <div class="container mt-4">
+    <form method="POST" enctype="multipart/form-data" id="mainForm">
+
+      <!-- Reference Selection -->
+      <div class="row mb-3">
+        <div class="input-group w-100">
+          <select id="updateRef" name="updateRef" class="form-select w-55">
+            <option value="">Sélectionner une référence</option>
+            {% for ref in references %}
+              <option value="{{ ref }}">{{ ref }}</option>
+            {% endfor %}
+          </select>
+          <button type="submit" formaction="/update_fiche" class="btn btn-warning w-15">Mettre à jour</button>
+          <button type="button" class="btn btn-info w-15" onclick="GOficheTechnique()">Voir fiche</button>
+          <button type="button" class="btn btn-danger w-15" onclick="confirmDelete()">Supprimer</button>
+        </div>
+      </div>
+
+      <h1>Ajouter Fiche Technique</h1>
+
+      <!-- Type: Cloison / Porte -->
+      <div class="radio-container">
+        <label class="radio-label"><input type="radio" name="type" value="Cloison" checked> Cloison</label>
+        <label class="radio-label"><input type="radio" name="type" value="Porte"> Porte</label>
+      </div>
+
+      <!-- GENERAL INFORMATION -->
+      <div class="category">INFORMATIONS GÉNÉRALES</div>
+      <div class="row mb-2">
+        <div class="col">
+          <label for="reference" class="form-label">Référence</label>
+          <input type="text" class="form-control" name="reference" id="reference" placeholder="Référence" required>
+        </div>
+        <div class="col">
+          <label class="form-label">Section</label>
+          <input type="text" class="form-control" name="section" placeholder="Section" required>
+        </div>
+      </div>
+
+      <div class="row mb-2">
+        <div class="col">
+          <label class="form-label">Description</label>
+          <textarea class="form-control" name="description" maxlength="250" placeholder="Description (max 250 caractères)"></textarea>
+        </div>
+      </div>
+
+      <!-- Product Photo -->
+      <div class="category">PHOTO DU PRODUIT</div>
+      <div class="row mb-2">
+        <div class="col">
+          <input type="file" class="form-control" name="photo_produit" accept="image/*" onchange="previewImage(this, 'photoPreview')">
+          <input type="hidden" name="delete_photo_produit" id="delete_photo_produit" value="false">
+          <div class="image-preview-container mt-2">
+            <img id="photoPreview" class="preview preview-image d-none" src="">
+            <button type="button" class="delete-image-btn" onclick="markImageForDeletion('photo_produit', 'photoPreview')">×</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIMENSIONS -->
+      <div class="category">DIMENSIONS DES ÉLÉMENTS</div>
+      <div class="row mb-2">
+        <div class="col"><label class="form-label">Hauteur</label><input type="text" class="form-control" name="hauteur" placeholder="Hauteur (mm)"></div>
+        <div class="col"><label class="form-label">Largeur</label><input type="text" class="form-control" name="largeur" placeholder="Largeur (mm)"></div>
+        <div class="col"><label class="form-label">Épaisseur</label><input type="text" class="form-control" name="epaisseur_battent" placeholder="Épaisseur Battant (mm)"></div>
+        <div class="col"><label class="form-label">Tolérance en hauteur</label><input type="text" class="form-control" name="tolerance_hauteur" placeholder="Tolérance Hauteur (mm)"></div>
+      </div>
+
+      <!-- MASSES VOLUMIQUES -->
+      <div class="category">MASSES VOLUMIQUES</div>
+      <div class="row mb-2">
+        <div class="col"><label class="form-label">Verre (kg/m³)</label><input type="text" class="form-control" name="masse_verre" placeholder="Verre (kg/m³)"></div>
+        <div class="col"><label class="form-label">Panneau</label><input type="text" class="form-control" name="masse_Panneau" placeholder="Panneau"></div>
+        <div class="col"><label class="form-label">Poids cloison</label><input type="text" class="form-control" name="masse_Poids_cloison" placeholder="Poids cloison"></div>
+      </div>
+
+      <!-- FIRE RESISTANCE -->
+      <div class="category">RÉSISTANCE AU FEU</div>
+      <div class="row mb-2">
+        <div class="col"><label class="form-label">Résistance au feu standard</label><input type="text" class="form-control" name="resistance_feu_standard" placeholder="Résistance au feu standard"></div>
+      </div>
+
+      <!-- ACOUSTIC PERFORMANCE -->
+      <div class="category">PERFORMANCE ACOUSTIQUE</div>
+      <div class="row mb-2">
+        <div class="col"><label class="form-label">NBN S 01-400</label><input type="text" class="form-control" name="acoustique_porte_nbn_s_01_400" placeholder="NBN S 01-400"></div>
+        <div class="col"><label class="form-label">NBN EN ISO 717-1 (RW)</label><input type="text" class="form-control" name="acoustique_porte_nbn_en_iso_717_1" placeholder="NBN EN ISO 717-1 (RW)"></div>
+      </div>
+
+      <!-- DESIGN & FLEXIBILITY -->
+      <div class="category">DESIGN ET FLEXIBILITÉ</div>
+      <div class="row mb-2">
+        <div class="col"><textarea class="form-control" name="DESIGN_ET_FLEXIBILITÉ" rows="3" placeholder="DESIGN ET FLEXIBILITÉ"></textarea></div>
+      </div>
+
+<!--      &lt;!&ndash; SOLIDITY & DURABILITY &ndash;&gt;-->
+<!--      <div class="category">SOLIDITÉ ET DURABILITÉ</div>-->
+<!--      <div class="row mb-2">-->
+<!--        <div class="col"><label class="form-label">Charnières</label><input type="text" class="form-control" name="charnieres" placeholder="Charnières"></div>-->
+<!--        <div class="col"><label class="form-label">Béquilles de portes</label><input type="text" class="form-control" name="bequilles" placeholder="Béquilles de portes"></div>-->
+<!--      </div>-->
+<!--      <div class="row mb-2">-->
+<!--        <div class="col"><label class="form-label">Serrure</label><input type="text" class="form-control" name="serrure" placeholder="Serrure"></div>-->
+<!--        <div class="col"><label class="form-label">Cylindre</label><input type="text" class="form-control" name="cylindre" placeholder="Cylindre"></div>-->
+<!--      </div>-->
+<!--      <div class="row mb-2">-->
+<!--        <div class="col"><label class="form-label">Arrêt de porte</label><input type="text" class="form-control" name="arret_porte" placeholder="Arrêt de porte"></div>-->
+<!--      </div>-->
+
+      <!-- PERSONALIZATION -->
+      <div class="category">PERSONNALISATION ET OPTIONS</div>
+      <div class="row mb-2">
+        <div class="col"><textarea class="form-control" name="personnalisation" rows="3" placeholder="Personnalisation et options"></textarea></div>
+      </div>
+
+      <!-- IMPLEMENTATION -->
+<!--      <div class="category">MISE EN ŒUVRE</div>-->
+<!--      <div class="row mb-2">-->
+<!--        <div class="col"><textarea class="form-control" name="mise_en_oeuvre" rows="3" placeholder="Mise en œuvre"></textarea></div>-->
+<!--      </div>-->
+
+      <!-- CUSTOMER SERVICE -->
+<!--      <div class="category">SERVICE CLIENTS</div>-->
+<!--      <div class="row mb-2">-->
+<!--        <div class="col"><textarea class="form-control" name="service_clients" rows="3" placeholder="Service clients"></textarea></div>-->
+<!--      </div>-->
+
+      <!-- EXPLODED VIEW IMAGE -->
+      <div class="category">VUE ÉCLATÉE PRODUIT</div>
+      <div class="row mb-2">
+        <div class="col">
+          <div class="input-group w-100">
+            <input type="file" class="form-control" name="vue_eclatee_image" id="imageUpload" accept="image/*" onchange="handleImageUpload(this)" style="width:70%;">
+            <button type="button" class="btn btn-light w-30" id="btnEditImage">✏️ Éditer</button>
+          </div>
+          <input type="hidden" name="delete_vue_eclatee_image" id="delete_vue_eclatee_image" value="false">
+          <div id="imgError" class="text-danger mt-1" style="display:none;">L'image doit être exactement 700x900 pixels !</div>
+        </div>
+      </div>
+      <div class="row mb-2">
+        <div class="col text-center">
+          <div class="image-preview-container">
+            <img id="explodedPreview" class="preview d-none" src="" style="max-width:100%; max-height:400px;">
+            <button type="button" class="delete-image-btn" onclick="markImageForDeletion('vue_eclatee_image', 'explodedPreview')">×</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Exploded View Components -->
+      {% for row in [(1,12), (2,13), (3,14), (4,15), (5,16), (6,17), (7,18), (8,19), (9,20), (10,21), (11,22)] %}
+        <div class="row mb-2">
+          <div class="col">
+            <div class="input-group">
+              <span class="input-group-text">{{ row[0] }}</span>
+              <input type="text" class="form-control" name="vue_eclatee_{{ row[0] }}" placeholder="Composant {{ row[0] }}">
+            </div>
+          </div>
+          <div class="col">
+            <div class="input-group">
+              <span class="input-group-text">{{ row[1] }}</span>
+              <input type="text" class="form-control" name="vue_eclatee_{{ row[1] }}" placeholder="Composant {{ row[1] }}">
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+      <!-- TECHNICAL DRAWINGS -->
+      <div class="category">DESSINS TECHNIQUES PRODUIT</div>
+      {% for i in range(1,7) %}
+        <div class="row mb-3 align-items-center">
+          <div class="col-md-4">
+            <input type="file" class="form-control" id="dessinInput{{i}}" name="dessin_technique_{{i}}" accept="image/*" onchange="checkExactSize(this, 'dessinPreview{{i}}', 'errorMsg{{i}}', {{i}})">
+            <input type="hidden" name="delete_dessin_technique_{{i}}" id="delete_dessin_technique_{{i}}" value="false">
+            {% if i <= 5 %}
+              <small id="errorMsg{{i}}" class="text-danger d-none">⚠ Image horizontale {{i}} doit être exactement <b>400 × 300 px</b>.</small>
+            {% else %}
+              <small id="errorMsg{{i}}" class="text-danger d-none">⚠ Image verticale doit être exactement <b>300 × 940 px</b>.</small>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            <input type="text" class="form-control mt-2" name="dessin_technique_nom_{{i}}" placeholder="Nom du dessin {{i}}">
+          </div>
+          <div class="col-md-4 text-center">
+            <div class="image-preview-container">
+              <img id="dessinPreview{{i}}" class="preview d-none" src="" style="max-height:100px;">
+              <button type="button" class="delete-image-btn" onclick="markImageForDeletion('dessin_technique_{{i}}', 'dessinPreview{{i}}')">×</button>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+
+      <input type="hidden" name="previous_ref" id="previous_ref">
+
+      <!-- Submit Button -->
+      <div class="row mb-3">
+        <div class="col">
+          <button type="submit" class="btn btn-primary w-100" formaction="/add_fiche">Ajouter la Fiche Technique</button>
+        </div>
+      </div>
+
+    </form>
+  </div>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+
+</body>
+</html>

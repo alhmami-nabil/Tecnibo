@@ -1,0 +1,518 @@
+/* ==================== FONTS ==================== */
+@font-face {
+    font-family: 'TecniboDisplay';
+    src: url('/static/fonts/TECNIBO-DISPLAY.otf') format('opentype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'UniversalSans500';
+    src: url('/static/fonts/UniversalSans-500.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+
+
+.Telecharger {
+  text-align: center;
+  margin-top: 20px;
+}
+
+.Telecharger button {
+  background-color: #000;
+  color: white;
+  font-family: 'UniversalSans500', sans-serif;
+  font-size: 12px;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.Telecharger button:hover {
+  background-color: #333;
+}
+
+
+
+
+/* ==================== PAGE SETUP ==================== */
+.PageA4 {
+    width: 210mm;
+    height: 297mm;
+    margin: 0 auto;
+    background: white;
+    padding: 13px 10px 20px 19px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 0; /* we will use specific header/footer padding */
+    box-sizing: border-box;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+/* ==================== HEADER ==================== */
+
+header {
+    height: 20mm;
+    padding: 13px 10px 20px 19px;
+}
+.logo {
+    font-family: 'TecniboDisplay', sans-serif;
+    font-size: 20px;
+    color: #000;
+    letter-spacing: 1.7px;
+}
+
+.header-right {
+    display: flex;
+    margin-left: 267.3px;
+    letter-spacing: 0.3px;
+}
+
+.text-muted-header {
+    font-family: 'UniversalSans500', sans-serif;
+    font-size: 8px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    color: #000;
+    font-weight: bold;
+}
+
+/* ==================== MAIN ==================== */
+main {
+    height: 267mm;
+    padding: 13px 10px 20px 19px;
+}
+
+.title {
+    font-family: 'TecniboDisplay', sans-serif;
+    font-size: 52px;
+    padding-top: 32px;
+    padding-bottom: 5px;
+    color: #000;
+    text-align: left;
+    text-transform: uppercase;
+}
+
+.product-photo {
+    width: 97%;
+    height: 315px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 15px;
+    color: #000;
+    font-size: 16px;
+}
+.table-row .col-6:first-child { width: 48.5%; margin-right: 15px; }
+.table-row .col-6:last-child { width: 48.5%; margin-left: -0.5px; }
+
+.text-muted {
+    font-family: 'UniversalSans500', sans-serif;
+    font-size: 8px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    color: #000;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+}
+.border-half { border-top: 1px solid rgba(0,0,0,0.4); }
+
+.inner-row {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+  border-top: 1px solid rgba(0,0,0,0.4);
+}
+.inner-row .left {
+  display: inline-block;
+  width: 192.5px;
+  font-family: 'UniversalSans500', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.3px;
+}
+
+.inner-row .right {
+  flex-grow: 1;
+  font-family: 'UniversalSans500', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.3px;
+  text-align: left;
+}
+
+.text-desc {
+    font-family: 'UniversalSans500', sans-serif;
+    font-size: 11.5px;
+    padding-top: 2px;
+    padding-bottom: 5px;
+    color: #000;
+    text-align: justify;
+    line-height: 1.4;
+    letter-spacing: 0.08px;
+}
+
+.padding { padding-top: 22px; }
+.padding-test { padding-top: 21px; letter-spacing: 0.3px; line-height: 1.7; text-align: justify;}
+
+.text-muted-dim { padding-top: 5px !important; }
+.text-muted-larg { padding-bottom: 4px !important; }
+.text-muted-per { padding-bottom: 4px !important; }
+
+/* ==================== FOOTER ==================== */
+.footer {
+    font-family: 'UniversalSans500', sans-serif;
+    padding: 13px 0px 0px 0px;
+    margin: 0px 18.5px 0px 18.5px;
+    height: 10mm;
+    border-top: 1px solid rgba(0,0,0,0.4);
+}
+
+.footer-content {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.numberPage { font-size: 8px; font-weight: 500; color: #666; }
+
+
+
+/* page 2 */
+
+.logo2 {
+    font-family: 'TecniboDisplay', sans-serif;
+    font-size: 30px;
+    margin-top : -3px;
+    color: #000;
+    letter-spacing: 2px;
+}
+.text-muted-header2 {
+    font-family: 'UniversalSans500', sans-serif;
+    font-size: 8px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    color: #000;
+    font-weight: bold;
+}
+.header-right2 {
+    display: flex;
+    margin-left: 212px;
+    letter-spacing: 0.3px;
+}
+
+.Premier {
+   height: 120mm;
+    /*height: 80mm;*/
+}
+.empty {
+    height: 36px;
+    margin: 0px 9.5px 0px 0px;
+    border-bottom: 1px solid rgba(0,0,0,0.4);
+}
+.DesFlec {
+    font-family: 'UniversalSans500', sans-serif;
+    padding-top: 6px;
+    font-size: 16px;
+}
+.Des-Flec {
+    margin-left: 0px;
+    padding-top: 4px;
+}
+.text-Des-Flec {
+    padding-bottom: 1px !important;
+}
+.text-desc-Des-Flec{
+    font-family: 'UniversalSans500', sans-serif;
+    font-size: 11.5px;
+    padding-top: 2px;
+    padding-bottom: 5px;
+    color: #000;
+    text-align: justify;
+    line-height: 1.4;
+    letter-spacing: 0.02px;
+}
+.padding-part1 {
+    padding-top: 17px;
+}
+.padding-premier {
+    padding-top: 65px;
+    margin: 0px 9.5px 0px 0px;
+    border-bottom: 1px solid rgba(0,0,0,0.4);
+}
+.padding-part2 {
+    padding-top: 19.5px;
+}
+
+/* page 3 */
+
+.main1 {
+ height: 164.5mm;
+ margin: 0px 9.5px 0px 0px;
+}
+.main2 {
+  height: 100mm;
+
+}
+.padding-Pa3 {
+    padding-top: 36px;
+}
+.logTitle {
+    font-family: 'TecniboDisplay', sans-serif;
+    font-size: 20px;
+    margin-top : 2px;
+    color: #000;
+    letter-spacing: 1px;
+}
+#Image {
+  width: 50%;
+  margin-right: 190px !important;
+  margin: 14px auto 0 auto;    /* auto left/right centers it */
+  height: 474px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.two-column-list {
+    padding: 64px 9.5px 0px 0px;
+}
+.text-muted_main2 {
+    font-family: 'UniversalSans500', sans-serif;
+    font-size: 8px;
+    padding-top: 10.5px;
+    padding-bottom: 10.5px;
+    color: #000;
+    letter-spacing: 0.3px;
+}
+.padding-premier_page3 {
+    padding-top: 150px;
+    margin: 0px 9.5px 0px 0px;
+    border-bottom: 1px solid rgba(0,0,0,0.4);
+}
+
+/* page 4 */
+
+ .main4 {
+    height: calc(100vh - 60mm);
+    margin: 5mm 2mm 20mm 0mm;
+    box-sizing: border-box;
+    overflow: hidden;
+    }
+
+        /* Main row with two columns */
+    .main4 > .row.table-row {
+      display: flex;
+            gap: 10px;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Left column: Horizontal sections (70%) */
+        .main4 .col-8 {
+            width: 68%;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        /* Right column: Vertical section (30%) */
+        .main4 .col-4 {
+            width: 30%;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        /* Column headers */
+        .DesFlecHV {
+            font-weight: bold;
+            text-align: center;
+            font-size: 16px;
+            padding: 12px;
+            margin: 0 0 10px 0;
+            flex-shrink: 0;
+        }
+
+        /* Horizontal rows */
+        .main4 .Horizontal1,
+        .main4 .Horizontal2 {
+            display: flex;
+            gap: 10px;
+            height: 240px;
+            margin: 0 0 10px 0;
+        }
+
+        .main4 .Horizontal3 {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            height: 240px;
+            margin: 0;
+        }
+
+        /* Columns inside rows */
+        .main4 .Horizontal1 .col-6,
+        .main4 .Horizontal2 .col-6 {
+            flex: 1;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Third row - centered column */
+        .main4 .Horizontal3 .col-6 {
+            flex: 0 0 50%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* W3.CSS container reset */
+        .main4 .w3-container {
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* W3.CSS card styling */
+        .main4 .w3-card-4 {
+            width: 100%;
+            max-width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+        }
+
+        /* Card images container */
+        .main4 .w3-card-4 > img {
+            flex: 1;
+            width: 100%;
+            height: calc(100% - 60px);
+            object-fit: contain;
+            display: block;
+        }
+
+        /* Card text container */
+        .main4 .w3-card-4 .w3-container {
+            flex-shrink: 0;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+        }
+
+        .main4 .w3-card-4 .w3-container p {
+            margin: 5px;
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+            line-height: 1.2;
+        }
+
+.vertical {
+    flex: 1;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 0;
+}
+
+.vertical img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* fill entire box */
+    display: block;
+}
+
+        /* Override all Bootstrap defaults */
+        .main4 .row {
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .main4 [class*="col-"] {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        .main4 .gx-0 {
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .main4 .gx-0 > * {
+            padding-left: 0;
+            padding-right: 0;
+        }
+
+        /* W3.CSS utilities */
+        .w3-center {
+            text-align: center;
+        }
+
+
+
+
+/* ==================== PRINT ==================== */
+/* ========== PRINT SETTINGS ENFORCEMENT ========== */
+@page {
+  size: A4 portrait;   /* matches Print > Layout: Portrait & Paper size: A4 */
+  margin: 0;           /* matches Print > Margins: None */
+}
+
+@media print {
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact; /* keeps background colors/images */
+    background: #fff !important;
+  }
+
+  .PageA4, .document {
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0 auto;
+    box-shadow: none !important;
+    page-break-after: always;
+  }
+
+  /* Hide download button when printing */
+  .Telecharger {
+    display: none !important;
+  }
+
+  /* Ensure image pages don't create blank overflow */
+  .main4 {
+    overflow: hidden !important;
+    height: calc(100% - 40mm) !important;
+  }
+
+  /* ✅ PRINT ONLY FIRST 5 PAGES */
+  .PageA4:nth-child(n+7) {
+    display: none !important;
+  }
+
+  /* Prevent a blank page at the end */
+  .PageA4:nth-child(6) {
+    page-break-after: auto !important;
+  }
+}
