@@ -36,7 +36,7 @@
   <main>
     <!-- Title -->
     <h1 class="title">{{ fiche.reference }}</h1>
-    <h3 class="title2">{{ fiche.variant }}</h3>
+    <h2 class="variant">{{ fiche.variant }}</h2>
 
     <!-- Product photo -->
     <div class="row gx-0">
@@ -271,12 +271,7 @@
       <div class="row table-row gx-0">
         <div class="col-6 border-half">
           <div class="logTitle">
-            {% set parts = fiche.reference.split(' ') %}
-            {% if parts|length >= 2 and parts[-2]|upper in ['VARIANTE'] %}
-              {{ parts[:-2] | join(' ') }}
-            {% else %}
               {{ fiche.reference }}
-            {% endif %}
           </div>
         </div>
       </div>

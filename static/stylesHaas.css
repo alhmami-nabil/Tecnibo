@@ -130,6 +130,15 @@ main {
   text-transform: uppercase;
 }
 
+
+
+.variant {
+  font-family: 'TecniboDisplay', sans-serif;
+  color: #000;
+  text-align: left;
+  text-transform: uppercase;
+}
+
 .product-photo {
   width: 97%;
   height: 315px;
