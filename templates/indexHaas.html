@@ -36,7 +36,9 @@
   <main>
     <!-- Title -->
     <h1 class="title">{{ fiche.reference }}</h1>
-    <h2 class="variant">{{ fiche.variant }}</h2>
+    {% if fiche.variant %}
+      <h2 class="variant">{{ fiche.variant }}</h2>
+    {% endif %}
 
     <!-- Product photo -->
     <div class="row gx-0">
