@@ -10,7 +10,7 @@ __pycache__/
 
 # Database
 *.db
-!FicheTechnique_template.db
+!FicheTechnique.db
 # Temporary / OS files
 *.log
 *.tmp
