@@ -28,7 +28,6 @@
       <div class="d-flex text-muted-header header-right">
         <span class="FICHE" style="margin-right: 121px;">PRODUCTFICHE</span>
         <span class="SECTION" style="margin-right: 56px;">
-
           {% if fiche.type|lower == 'cloison' %}
             SYSTEEMWAND
           {% elif fiche.type|lower == 'porte' %}
@@ -36,7 +35,6 @@
           {% else %}
             {{ fiche.type|upper }}
           {% endif %}
-
         </span>
         <span class="CPID">{{ fiche.reference_menu|upper }}</span>
       </div>
