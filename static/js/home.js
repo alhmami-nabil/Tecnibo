@@ -198,23 +198,17 @@ window.addEventListener('DOMContentLoaded', function() {
     const typePorte = document.getElementById('typePorte');
 
     if (typeCloison) {
-         const base = (typeof window !== 'undefined' && window.location.pathname.startsWith('/tools/fiches'))
-? '/tools/fiches'
-: '';
         typeCloison.addEventListener('change', function() {
             if (this.checked) {
-                window.location.href = `${base}/?type=Cloison`;
+                window.location.href = "/?type=Cloison";
             }
         });
     }
 
     if (typePorte) {
-    const base = (typeof window !== 'undefined' && window.location.pathname.startsWith('/tools/fiches'))
-? '/tools/fiches'
-: '';
         typePorte.addEventListener('change', function() {
             if (this.checked) {
-                window.location.href = `${base}/?type=Cloison`"/?type=Porte";
+                window.location.href = "/?type=Porte";
             }
         });
     }
