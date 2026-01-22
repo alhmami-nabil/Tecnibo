@@ -269,7 +269,15 @@
       <div class="logo2">TECNIBO</div>
       <div class="d-flex text-muted-header2 header-right2">
         <span class="FICHE" style="margin-right: 121px;">PRODUCTFICHE</span>
-        <span class="SECTION" style="margin-right: 56px;">{{ fiche.type|upper }}</span>
+        <span class="SECTION" style="margin-right: 56px;">
+          {% if fiche.type|lower == 'cloison' %}
+            SYSTEEMWAND
+          {% elif fiche.type|lower == 'porte' %}
+            DEUR
+          {% else %}
+            {{ fiche.type|upper }}
+          {% endif %}
+        </span>
         <span class="CPID">{{ fiche.reference_menu|upper }}</span>
       </div>
     </div>
@@ -332,7 +340,15 @@
       <div class="logo2">TECNIBO</div>
       <div class="d-flex text-muted-header2 header-right2">
         <span class="FICHE" style="margin-right: 121px;">PRODUCTFICHE</span>
-        <span class="SECTION" style="margin-right: 56px;">{{ fiche.type|upper }}</span>
+        <span class="SECTION" style="margin-right: 56px;">
+          {% if fiche.type|lower == 'cloison' %}
+            SYSTEEMWAND
+          {% elif fiche.type|lower == 'porte' %}
+            DEUR
+          {% else %}
+            {{ fiche.type|upper }}
+          {% endif %}
+        </span>
         <span class="CPID">{{ fiche.reference_menu|upper }}</span>
       </div>
     </div>
