@@ -200,7 +200,8 @@ window.addEventListener('DOMContentLoaded', function() {
     if (typeCloison) {
         typeCloison.addEventListener('change', function() {
             if (this.checked) {
-                window.location.href = "/?type=Cloison";
+                 const base = (typeof window !== 'undefined' && window.location.pathname.startsWith('/tools/fiches'))? '/tools/fiches'
+                window.location.href = `${base}/?type=Cloison`;
             }
         });
     }
@@ -208,7 +209,7 @@ window.addEventListener('DOMContentLoaded', function() {
     if (typePorte) {
         typePorte.addEventListener('change', function() {
             if (this.checked) {
-                window.location.href = "/?type=Porte";
+                window.location.href = `${base}/?type=Porte`;
             }
         });
     }
