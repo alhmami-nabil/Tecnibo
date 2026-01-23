@@ -499,6 +499,31 @@ def save_annotations():
     big_circle_radius = 20 * scale
     big_circle = make_perfect_circle(big_circle_radius * 2)
 
+    # --- ROBUST FONT LOADING ---
+    font_size = 20 * scale
+    font = None
+
+    # List of possible font paths (Windows, Linux, and project-specific)
+    font_paths = [
+        "arial.ttf",  # Local Windows
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Ubuntu/Debian
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",  # Arch/CentOS
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",  # Alternatives
+        os.path.join(app.root_path, "static/fonts/TECNIBO-DISPLAY.ttf")  # Bundled font (Best practice)
+    ]
+
+    for path in font_paths:
+        try:
+            font = ImageFont.truetype(path, font_size)
+            break  # Exit loop once a font is successfully loaded
+        except OSError:
+            continue
+
+    if font is None:
+        # Last resort fallback if no TTF files are found on the system
+        font = ImageFont.load_default()
+    # ---------------------------
+
     start_line_pos = 50
     small_circle_radius = 3
 
@@ -507,28 +532,28 @@ def save_annotations():
         ann_x = int(ann['x'] * scale)
         ann_y = int(ann['y'] * scale)
 
+        # Draw the connection line
         draw.line([(line_start, ann_y), (ann_x, ann_y)], fill="black", width=scale)
 
+        # Draw the small dot at the point of interest
         small_r = small_circle_radius * scale
         draw.ellipse([
             ann_x - small_r, ann_y - small_r,
             ann_x + small_r, ann_y + small_r
         ], fill="black")
 
+        # Paste the pre-rendered smooth circle for the number bubble
         output_img.paste(
             big_circle,
             (int(line_start - big_circle_radius), int(ann_y - big_circle_radius)),
             big_circle
         )
 
-        try:
-            font = ImageFont.truetype("arial.ttf", 20 * scale)
-        except:
-            font = ImageFont.load_default()
-
+        # Draw the ID number inside the bubble
         draw.text((line_start, ann_y), str(ann['id']),
                   fill="white", anchor="mm", font=font)
 
+    # Save with high DPI for print quality
     output_img.save(image_path, dpi=(300, 300))
 
     return jsonify({
