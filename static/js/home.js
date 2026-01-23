@@ -700,11 +700,14 @@ function saveEditorAnnotations() {
 
 function GOficheTechnique() {
     const cpid = document.getElementById("updateRef").value;
+    const base = (typeof window !== 'undefined' && window.location.pathname.startsWith('/tools/fiches'))
+? '/tools/fiches'
+: '';
     if (!cpid) {
         alert('Sélectionnez une CPID');
         return;
     }
-    window.location.href = `/index?cpid=${cpid}`;
+    window.location.href = `${base}/index?cpid=${cpid}`;
 }
 
 function confirmDelete() {
