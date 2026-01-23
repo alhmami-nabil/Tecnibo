@@ -10,11 +10,22 @@ let isDragging = false;
 let draggedAnnotation = null;
 
 // ============================================
+// BASE PATH HELPER
+// ============================================
+const getBasePath = () => {
+    return (typeof window !== 'undefined' && window.location.pathname.startsWith('/tools/fiches'))
+        ? '/tools/fiches'
+        : '';
+};
+
+// ============================================
 // INITIALIZATION - RUNS ONCE
 // ============================================
 
 window.addEventListener('DOMContentLoaded', function() {
     console.log('🟢 DOMContentLoaded - Initializing...');
+
+    const base = getBasePath();
 
     // ===== EDITOR BUTTON =====
     const btnEdit = document.getElementById('btnEditImage');
@@ -35,7 +46,7 @@ window.addEventListener('DOMContentLoaded', function() {
             const formData = new FormData();
             formData.append("vue_eclatee_image", file);
 
-            fetch('/create_exploded_view', {
+            fetch(`${base}/create_exploded_view`, {
                 method: 'POST',
                 body: formData
             })
@@ -86,7 +97,7 @@ window.addEventListener('DOMContentLoaded', function() {
                 preview.style.border = '';
             });
 
-            fetch(`/get_fiche/${ref}`)
+            fetch(`${base}/get_fiche/${ref}`)
                 .then(r => r.json())
                 .then(data => {
                     if (loadingOverlay) loadingOverlay.classList.remove('active');
@@ -196,9 +207,6 @@ window.addEventListener('DOMContentLoaded', function() {
     // ===== TYPE SWITCHING =====
     const typeCloison = document.getElementById('typeCloison');
     const typePorte = document.getElementById('typePorte');
-    const base = window.location.pathname.startsWith('/tools/fiches')
-  ? '/tools/fiches'
-  : '';
 
     if (typeCloison) {
         typeCloison.addEventListener('change', function() {
@@ -639,13 +647,14 @@ function saveEditorAnnotations() {
         return;
     }
 
+    const base = getBasePath();
     const statusEl = document.getElementById('editorStatus');
     if (statusEl) {
         statusEl.textContent = '💾 Enregistrement...';
         statusEl.style.color = '#2196F3';
     }
 
-    fetch('/save_annotations', {
+    fetch(`${base}/save_annotations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -700,9 +709,7 @@ function saveEditorAnnotations() {
 
 function GOficheTechnique() {
     const cpid = document.getElementById("updateRef").value;
-    const base = (typeof window !== 'undefined' && window.location.pathname.startsWith('/tools/fiches'))
-? '/tools/fiches'
-: '';
+    const base = getBasePath();
     if (!cpid) {
         alert('Sélectionnez une CPID');
         return;
@@ -718,9 +725,10 @@ function confirmDelete() {
     }
 
     if (confirm(`Êtes-vous sûr de vouloir supprimer la fiche "${ref}" (versions FR et NL) ?`)) {
+        const base = getBasePath();
         const form = document.createElement("form");
         form.method = "POST";
-        form.action = "/delete_fiche";
+        form.action = `${base}/delete_fiche`;
 
         const input = document.createElement("input");
         input.type = "hidden";

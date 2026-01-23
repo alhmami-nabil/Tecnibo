@@ -14,6 +14,15 @@ ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'pdf'}
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
+# Base path configuration
+BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
+
+
+# -------------------- HELPER: Get Base Path --------------------
+def get_base_url():
+    """Returns base path for URL generation"""
+    return BASE_PATH if BASE_PATH else ''
+
 
 # -------------------- DATABASE INIT --------------------
 def init_db():
@@ -131,8 +140,10 @@ def extract_nl_translations(form_data):
 
 # -------------------- HOME --------------------
 @app.route("/", methods=["GET"])
+@app.route(f"{BASE_PATH}/", methods=["GET"])
 def home():
     type_selected = request.args.get("type", "Cloison")
+    base = get_base_url()
 
     conn = get_db_connection()
     cpids = [row['cpid'] for row in conn.execute(
@@ -142,21 +153,23 @@ def home():
     conn.close()
 
     if type_selected == "Cloison":
-        return render_template("homeCloison.html", cpids=cpids, type_selected=type_selected)
+        return render_template("homeCloison.html", cpids=cpids, type_selected=type_selected, base=base)
     else:
-        return render_template("homePorte.html", cpids=cpids, type_selected=type_selected)
+        return render_template("homePorte.html", cpids=cpids, type_selected=type_selected, base=base)
 
 
 # -------------------- ADD FICHE --------------------
 @app.route("/add_fiche", methods=["POST"])
+@app.route(f"{BASE_PATH}/add_fiche", methods=["POST"])
 def add_fiche():
     cpid = request.form.get("cpid")
     ref_type = request.form.get("type", "Cloison")
     previous_ref = request.form.get("previous_ref")
+    base = get_base_url()
 
     if not cpid:
         flash("CPID est obligatoire", "warning")
-        return redirect(url_for("home", type=ref_type))
+        return redirect(f"{base}/?type={ref_type}")
 
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
@@ -166,7 +179,7 @@ def add_fiche():
     if existing:
         flash("Cette CPID existe déjà. Utilisez 'Mettre à jour' pour la modifier.", "danger")
         conn.close()
-        return redirect(url_for("home", type=ref_type))
+        return redirect(f"{base}/?type={ref_type}")
 
     # Récupérer les images de la référence précédente si spécifiée
     previous_images = {}
@@ -251,11 +264,12 @@ def add_fiche():
     finally:
         conn.close()
 
-    return redirect(url_for("home", type=ref_type))
+    return redirect(f"{base}/?type={ref_type}")
 
 
 # -------------------- GET FICHE --------------------
 @app.route("/get_fiche/<cpid>")
+@app.route(f"{BASE_PATH}/get_fiche/<cpid>")
 def get_fiche(cpid):
     conn = get_db_connection()
 
@@ -282,13 +296,15 @@ def get_fiche(cpid):
 
 # -------------------- UPDATE --------------------
 @app.route("/update_fiche", methods=["POST"])
+@app.route(f"{BASE_PATH}/update_fiche", methods=["POST"])
 def update_fiche():
     cpid = request.form.get("updateRef")
     ref_type = request.form.get("type", "Cloison")
+    base = get_base_url()
 
     if not cpid:
         flash("Sélectionnez une référence à mettre à jour", "warning")
-        return redirect(url_for("home", type=ref_type))
+        return redirect(f"{base}/?type={ref_type}")
 
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
@@ -305,7 +321,7 @@ def update_fiche():
     if not existing_fr:
         flash("Référence introuvable", "danger")
         conn.close()
-        return redirect(url_for("home", type=ref_type))
+        return redirect(f"{base}/?type={ref_type}")
 
     # Préparer les données FR
     data_fr = {}
@@ -394,18 +410,20 @@ def update_fiche():
     finally:
         conn.close()
 
-    return redirect(url_for("home", type=ref_type))
+    return redirect(f"{base}/?type={ref_type}")
 
 
 # -------------------- DELETE --------------------
 @app.route("/delete_fiche", methods=["POST"])
+@app.route(f"{BASE_PATH}/delete_fiche", methods=["POST"])
 def delete_fiche():
     cpid = request.form.get("deleteRef")
     ref_type = request.form.get("type", "Cloison")
+    base = get_base_url()
 
     if not cpid:
         flash("Sélectionnez une référence à supprimer", "warning")
-        return redirect(url_for("home", type=ref_type))
+        return redirect(f"{base}/?type={ref_type}")
 
     try:
         conn = get_db_connection()
@@ -417,7 +435,7 @@ def delete_fiche():
     except Exception as e:
         flash(f"Erreur lors de la suppression: {e}", "danger")
 
-    return redirect(url_for("home", type=ref_type))
+    return redirect(f"{base}/?type={ref_type}")
 
 
 @app.template_filter('remove_last_part')
@@ -429,8 +447,11 @@ def remove_last_part(value):
 
 # -------------------- CREATE EXPLODED VIEW --------------------
 @app.route('/create_exploded_view', methods=['POST'])
+@app.route(f"{BASE_PATH}/create_exploded_view", methods=['POST'])
 def create_exploded_view():
     file = request.files.get("vue_eclatee_image")
+    base = get_base_url()
+
     if not file or file.filename == '':
         return jsonify({"error": "No image file provided"}), 400
 
@@ -440,11 +461,12 @@ def create_exploded_view():
 
     return jsonify({
         "success": "Image uploaded! Opening editor...",
-        "redirect": f"/editor/{filename}"
+        "redirect": f"{base}/editor/{filename}"
     })
 
 
 @app.route('/save_annotations', methods=['POST'])
+@app.route(f"{BASE_PATH}/save_annotations", methods=['POST'])
 def save_annotations():
     data = request.json
     filename = data['filename']
@@ -516,9 +538,11 @@ def save_annotations():
 
 
 @app.route('/index')
+@app.route(f"{BASE_PATH}/index")
 def index():
     cpid = request.args.get("cpid")
     lang = request.args.get("lang", "fr")
+    base = get_base_url()
 
     fiche = None
     if cpid:
@@ -535,9 +559,9 @@ def index():
         return "Référence introuvable", 404
 
     if lang == "nl":
-        return render_template("indexHaasNL.html", fiche=fiche, lang="nl")
+        return render_template("indexHaasNL.html", fiche=fiche, lang="nl", base=base)
 
-    return render_template("indexHaas.html", fiche=fiche, lang="fr")
+    return render_template("indexHaas.html", fiche=fiche, lang="fr", base=base)
 
 
 # -------------------- RUN --------------------
