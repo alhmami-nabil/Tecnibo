@@ -196,11 +196,14 @@ window.addEventListener('DOMContentLoaded', function() {
     // ===== TYPE SWITCHING =====
     const typeCloison = document.getElementById('typeCloison');
     const typePorte = document.getElementById('typePorte');
+    const base = window.location.pathname.startsWith('/tools/fiches')
+  ? '/tools/fiches'
+  : '';
 
     if (typeCloison) {
         typeCloison.addEventListener('change', function() {
             if (this.checked) {
-                window.location.href = "/?type=Cloison";
+                window.location.href = `${base}/?type=Cloison`;
             }
         });
     }
@@ -208,7 +211,7 @@ window.addEventListener('DOMContentLoaded', function() {
     if (typePorte) {
         typePorte.addEventListener('change', function() {
             if (this.checked) {
-                window.location.href = "/?type=Porte";
+                window.location.href = `${base}/?type=Porte`;
             }
         });
     }
