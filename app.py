@@ -475,84 +475,61 @@ def save_annotations():
     image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
     scale = 4
-    img = Image.open(image_path).convert("RGB")
+    img = Image.open(image_path)
 
-    # Base canvas size (must match editor)
     width = 700
     height = 900
 
     high_width = width * scale
     high_height = height * scale
 
-    # Create high-res base
     output_img = Image.new("RGB", (high_width, high_height), "white")
     bg = img.resize((high_width, high_height), Image.LANCZOS)
     output_img.paste(bg, (0, 0))
 
-    # Draw context
     draw = ImageDraw.Draw(output_img)
 
-    # ---------- Utils ----------
     def make_perfect_circle(size, upscale=8):
         big = size * upscale
-        circle_img = Image.new("L", (big, big), 0)
+        circle_img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
         circle_draw = ImageDraw.Draw(circle_img)
-        circle_draw.ellipse((0, 0, big - 1, big - 1), fill=255)
+        circle_draw.ellipse((0, 0, big - 1, big - 1), fill="black")
         return circle_img.resize((size, size), Image.LANCZOS)
 
-    # ---------- Geometry ----------
+    big_circle_radius = 20 * scale
+    big_circle = make_perfect_circle(big_circle_radius * 2)
+
     start_line_pos = 50
     small_circle_radius = 3
-    big_circle_radius = 20 * scale
 
-    big_circle_mask = make_perfect_circle(big_circle_radius * 2)
-
-    # ---------- Font (LOAD ONCE) ----------
-    try:
-        font = ImageFont.truetype("arial.ttf", 20 * scale)
-    except:
-        font = ImageFont.load_default()
-
-    # ---------- Draw annotations ----------
     for ann in annotations:
         line_start = (start_line_pos if ann['side'] == 'left' else width - start_line_pos) * scale
-        ann_x = int(float(ann['x']) * scale)
-        ann_y = int(float(ann['y']) * scale)
+        ann_x = int(ann['x'] * scale)
+        ann_y = int(ann['y'] * scale)
 
-        # Line
-        draw.line([(line_start, ann_y), (ann_x, ann_y)], fill=(0, 0, 0), width=2 * scale)
+        draw.line([(line_start, ann_y), (ann_x, ann_y)], fill="black", width=scale)
 
-        # Small point
         small_r = small_circle_radius * scale
         draw.ellipse([
             ann_x - small_r, ann_y - small_r,
             ann_x + small_r, ann_y + small_r
-        ], fill=(0, 0, 0))
+        ], fill="black")
 
-        # Big circle (solid black)
-        circle_box = (
-            int(line_start - big_circle_radius),
-            int(ann_y - big_circle_radius),
-            int(line_start + big_circle_radius),
-            int(ann_y + big_circle_radius)
-        )
-        draw.ellipse(circle_box, fill=(0, 0, 0))
-
-        # Number (draw AFTER circle)
-        text = str(ann['id'])
-        bbox = draw.textbbox((0, 0), text, font=font)
-        tw = bbox[2] - bbox[0]
-        th = bbox[3] - bbox[1]
-
-        draw.text(
-            (line_start - tw / 2, ann_y - th / 2),
-            text,
-            fill=(255, 255, 255),
-            font=font
+        output_img.paste(
+            big_circle,
+            (int(line_start - big_circle_radius), int(ann_y - big_circle_radius)),
+            big_circle
         )
 
-    # Save final image
-    output_img.save(image_path, dpi=(300, 300), quality=95)
+        try:
+            font = ImageFont.truetype("arial.ttf", 20 * scale)
+        except:
+            font = ImageFont.load_default()
+
+        draw.text((line_start, ann_y), str(ann['id']),
+                  fill="white", anchor="mm", font=font)
+
+    output_img.save(image_path, dpi=(300, 300))
 
     return jsonify({
         'success': True,
