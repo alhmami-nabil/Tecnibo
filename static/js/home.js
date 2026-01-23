@@ -417,7 +417,29 @@ function openEditorModal(file) {
         return;
     }
 
+    /* =========================================================
+       🔥 CRITICAL FIX (SERVER BUG FIX)
+       ========================================================= */
+
+    const CANVAS_WIDTH = 700;
+    const CANVAS_HEIGHT = 900;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    // Real drawing buffer size
+    editorCanvas.width = CANVAS_WIDTH * dpr;
+    editorCanvas.height = CANVAS_HEIGHT * dpr;
+
+    // Visual size
+    editorCanvas.style.width = CANVAS_WIDTH + 'px';
+    editorCanvas.style.height = CANVAS_HEIGHT + 'px';
+
     editorCtx = editorCanvas.getContext('2d');
+
+    // Normalize scaling (important for retina + servers)
+    editorCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    /* ========================================================= */
 
     editorAnnotations = [];
     nextAnnotationId = 1;
@@ -426,20 +448,20 @@ function openEditorModal(file) {
     reader.onload = function(e) {
         editorImage = new Image();
         editorImage.onload = function() {
-            drawEditor();
+            drawEditor();   // now numbers, circles, lines are visible
         };
         editorImage.src = e.target.result;
     };
     reader.readAsDataURL(file);
 
-    // Remove any existing listeners
+    /* ================== EVENT CLEAN ================== */
     editorCanvas.onclick = null;
     editorCanvas.oncontextmenu = null;
     editorCanvas.onmousedown = null;
     editorCanvas.onmousemove = null;
     editorCanvas.onmouseup = null;
 
-    // Add new listeners
+    /* ================== EVENT BIND ================== */
     editorCanvas.onclick = handleEditorClick;
     editorCanvas.oncontextmenu = handleEditorRightClick;
     editorCanvas.onmousedown = handleMouseDown;
