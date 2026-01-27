@@ -9,6 +9,7 @@ __pycache__/
 .vscode/
 
 # Database
+*.db
 *.git
 
 # Temporary / OS files

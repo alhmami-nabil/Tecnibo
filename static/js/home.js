@@ -18,6 +18,9 @@ const getBasePath = () => {
         : '';
 };
 
+
+
+
 // ============================================
 // INITIALIZATION - RUNS ONCE
 // ============================================
@@ -747,3 +750,104 @@ function confirmDelete() {
         form.submit();
     }
 }
+
+
+
+
+document.addEventListener('DOMContentLoaded', function () {
+  console.log('DOM loaded - initializing translation modal');
+
+  const modalOverlay = document.getElementById('modalOverlay');
+  const closeBtn = document.getElementById('closeBtn');
+  const ignoreBtn = document.getElementById('ignoreBtn');
+  const saveBtn = document.getElementById('saveBtn');
+  const modalTitle = document.getElementById('modalTitle');
+  const inputFR = document.getElementById('trans_fr');
+  const inputNL = document.getElementById('trans_nl');
+
+  let currentField = null;
+  let currentInput = null;
+  let currentInputNL = null;
+
+  // Open modal when 🌐 🇫🇷 ⇄ 🇳🇱 button is clicked
+  document.querySelectorAll('.o_field_translate').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      currentField = this.dataset.field;
+      console.log('Opening modal for field:', currentField);
+
+      // Find FR input/textarea
+      currentInput =
+        document.querySelector(`[name="${currentField}"]`) ||
+        document.getElementById(currentField);
+
+      // Find NL hidden input
+      currentInputNL = document.getElementById(currentField + '_nl');
+
+      if (!currentInput) {
+        console.error('Input not found for field:', currentField);
+        return;
+      }
+
+      modalTitle.textContent = `Modifier : ${currentField}`;
+
+      // Load FR value
+      inputFR.value = currentInput.value || '';
+
+      // Load NL value if exists
+      inputNL.value = currentInputNL ? (currentInputNL.value || '') : '';
+
+      modalOverlay.classList.add('active');
+      console.log('Modal opened');
+    });
+  });
+
+  // Save button - saves both FR and NL values
+  saveBtn.addEventListener('click', function () {
+    console.log('Save clicked');
+
+    // Save FR value
+    if (currentInput) {
+      currentInput.value = inputFR.value;
+      console.log('Saved FR value:', inputFR.value);
+    }
+
+    // Save NL value
+    if (currentInputNL) {
+      currentInputNL.value = inputNL.value;
+      console.log('Saved NL value:', inputNL.value);
+    }
+
+    closeModal();
+  });
+
+  // Ignore button
+  ignoreBtn.addEventListener('click', closeModal);
+  closeBtn.addEventListener('click', closeModal);
+
+  // Close on overlay click
+  modalOverlay.addEventListener('click', function(e) {
+    if (e.target === modalOverlay) {
+      closeModal();
+    }
+  });
+
+  // Close on Escape key
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && modalOverlay.classList.contains('active')) {
+      closeModal();
+    }
+  });
+
+  function closeModal() {
+    console.log('Closing modal');
+    modalOverlay.classList.remove('active');
+    currentField = null;
+    currentInput = null;
+    currentInputNL = null;
+    inputFR.value = '';
+    inputNL.value = '';
+  }
+});

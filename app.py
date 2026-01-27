@@ -17,6 +17,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Base path configuration
 BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
 
+GATE_COOKIE = "cf_upload_gate"
+
 
 # -------------------- HELPER: Get Base Path --------------------
 def get_base_url():
@@ -101,6 +103,18 @@ def get_db_connection():
     conn = sqlite3.connect(DB_NAME)
     conn.row_factory = sqlite3.Row
     return conn
+
+
+# ================= GATE API =================
+@app.route("/api/cloudflare/access", methods=["GET"])
+def cloudflare_access():
+    """
+    API appelée par gate-check.js
+    """
+    gate_cookie = request.cookies.get(GATE_COOKIE)
+    if gate_cookie:
+        return jsonify({"ok": True})
+    return jsonify({"ok": False}), 401
 
 
 def calculate_vue_eclatee_count(data):
