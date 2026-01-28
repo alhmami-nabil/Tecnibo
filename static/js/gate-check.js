@@ -1,40 +1,41 @@
-// static/js/gate-check.js
-
 const GATE_ORIGIN = 'https://backend.tecnibo.com/api';
 const GATE_API_PATH = '/cloudflare/access';
+const GATE_COOKIE = 'cf_upload_gate';
 const REDIRECT_URL = 'https://backend.tecnibo.com/';
 
-// Make function global so it can be called from other scripts
+// Function to get a cookie by name
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
+// If you want global access
 window.ensureGateAccess = async function(nextUrl = window.location.href) {
-  console.log('🟢 Checking gate access...');
+    console.log('Checking gate access...');
 
-  try {
-    const res = await fetch(`${GATE_ORIGIN}${GATE_API_PATH}`, {
-      method: 'GET',
-      credentials: 'include', // send HttpOnly cookies
-      cache: 'no-store',
-    });
+    // Log the cookie value
+    const cookieValue = getCookie(GATE_COOKIE);
+    console.log(`Value of ${GATE_COOKIE}:`, cookieValue);
 
-    const data = await res.json().catch(() => null);
-    console.log('Gate API response:', data);
+    try {
+        const res = await fetch(`${GATE_ORIGIN}${GATE_API_PATH}`, {
+            method: 'GET',
+            credentials: 'include', // send cookies even if HttpOnly
+            cache: 'no-store'
+        });
+        const data = await res.json().catch(() => null);
 
-    if (res.ok && data?.ok) {
-      console.log('✅ Gate access granted');
-      return true; // access allowed
+        console.log('Gate API response:', data);
+
+        if (res.ok && data?.ok) return true;
+    } catch (e) {
+        console.error(e);
     }
-  } catch (err) {
-    console.error('❌ Error checking gate access:', err);
-  }
 
-  // If access not granted, redirect
-  const redirectUrl = new URL(REDIRECT_URL);
-  redirectUrl.searchParams.set('next', nextUrl);
-  console.warn('⚠️ Redirecting to gate:', redirectUrl.toString());
-  window.location.href = redirectUrl.toString();
-  return false;
-};
-
-// Optional helper to log all accessible cookies (excluding HttpOnly)
-window.logAllCookies = function() {
-  console.log('🌐 Accessible cookies:', document.cookie);
+    const url = new URL(REDIRECT_URL);
+    url.searchParams.set('next', nextUrl);
+    window.location.href = url.toString();
+    return false;
 };
