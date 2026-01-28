@@ -17,8 +17,6 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Base path configuration
 BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
 
-GATE_COOKIE = "cf_upload_gate"
-
 
 # -------------------- HELPER: Get Base Path --------------------
 def get_base_url():

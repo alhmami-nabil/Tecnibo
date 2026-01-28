@@ -10,7 +10,6 @@ __pycache__/
 
 # Database
 *.db
-*.git
 
 # Temporary / OS files
 *.log
