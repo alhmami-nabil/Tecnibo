@@ -3,8 +3,6 @@ import sqlite3
 import os
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont
-from functools import wraps
-from flask import request, redirect
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -107,21 +105,6 @@ def get_db_connection():
     return conn
 
 
-def require_gate_cookie(f):
-    """Decorator to check for gate cookie"""
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Skip in debug mode
-        if app.debug:
-            return f(*args, **kwargs)
-            
-        gate_cookie = request.cookies.get(GATE_COOKIE)
-        if not gate_cookie:
-            return redirect('https://backend.tecnibo.com/tools/fiches')
-        return f(*args, **kwargs)
-    return decorated_function
-
-
 def calculate_vue_eclatee_count(data):
     """Calculate how many vue_eclatee fields (1-22) are not null/empty"""
     count = 0
@@ -160,7 +143,6 @@ def extract_nl_translations(form_data):
 # -------------------- HOME --------------------
 @app.route("/", methods=["GET"])
 @app.route(f"{BASE_PATH}/", methods=["GET"])
-@require_gate_cookie
 def home():
     type_selected = request.args.get("type", "Cloison")
     base = get_base_url()
