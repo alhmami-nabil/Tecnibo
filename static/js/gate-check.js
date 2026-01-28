@@ -2,7 +2,7 @@
 const GATE_ORIGIN = 'https://backend.tecnibo.com/api';
 const GATE_API_PATH = '/cloudflare/access';
 const GATE_COOKIE = 'cf_upload_gate';
-const REDIRECT_URL = 'https://backend.tecnibo.com/?next=/tools/fiches';
+const REDIRECT_URL = 'https://backend.tecnibo.com/tools/fiches';
 
 function hasGateCookie() {
   const cookiesValue = document.cookie.split(';').some(c => c.trim().startsWith(`${GATE_COOKIE}=`));
