@@ -386,11 +386,10 @@
     <!-- Gate Check optimisé -->
 <script src="{{ url_for('static', filename='js/gate-check.js') }}"></script>
 
-  <script>
+<script>
   (async () => {
-  const ok = await ensureGateAccess();
-  if (!ok) return; // redirected if cookie invalid
-  // continue loading page scripts here if needed
+    const ok = await ensureGateAccess();
+    if (!ok) return; // redirected if cookie invalid
   })();
   </script>
 
