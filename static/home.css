@@ -1,22 +1,23 @@
 /* ==========================
-   General Body Styling
+   General Body Styling - RESPONSIVE
 ========================== */
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   min-height: 100vh;
-  padding: 20px 0;
+  padding: clamp(10px, 2vw, 20px) 0;
   background-color: #f0f2f5;
 }
 
 /* ==========================
-   Container Styling
+   Container Styling - RESPONSIVE
 ========================== */
 .container {
   background: #ffffff;
-  border-radius: 15px;
+  border-radius: clamp(10px, 2vw, 15px);
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-  padding: 40px;
+  padding: clamp(20px, 4vw, 40px);
   max-width: 1200px;
+  width: 95%;
   margin: 0 auto;
 }
 
@@ -33,7 +34,7 @@ body {
 }
 
 .input-group-text-number {
-  width: 3rem;
+  width: clamp(2.5rem, 5vw, 3rem);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -42,13 +43,13 @@ body {
 }
 
 /* ==========================
-   Main Title
+   Main Title - RESPONSIVE
 ========================== */
 h1 {
   color: #2d3748;
-  font-size: 2.5rem;
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 700;
-  margin-bottom: 30px;
+  margin-bottom: clamp(20px, 3vw, 30px);
   text-align: center;
   position: relative;
   padding-bottom: 15px;
@@ -60,23 +61,23 @@ h1::after {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 100px;
+  width: clamp(60px, 15vw, 100px);
   height: 4px;
   background: linear-gradient(90deg, #667eea, #764ba2);
   border-radius: 2px;
 }
 
 /* ==========================
-   Category Headers
+   Category Headers - RESPONSIVE
 ========================== */
 .category {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #ffffff;
   font-weight: 600;
-  font-size: 1rem;
-  padding: 12px 20px;
-  margin-top: 30px;
-  margin-bottom: 15px;
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  padding: clamp(10px, 2vw, 12px) clamp(15px, 3vw, 20px);
+  margin-top: clamp(20px, 3vw, 30px);
+  margin-bottom: clamp(12px, 2vw, 15px);
   border-radius: 8px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -84,15 +85,16 @@ h1::after {
 }
 
 /* ==========================
-   Form Controls
+   Form Controls - RESPONSIVE
 ========================== */
 .form-control {
   border: 2px solid #e2e8f0;
   border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 0.9rem;
+  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
+  font-size: clamp(0.85rem, 1.5vw, 0.9rem);
   transition: all 0.3s ease;
   background-color: #f8fafc;
+  width: 100%;
 }
 
 .form-control:focus {
@@ -104,17 +106,17 @@ h1::after {
 
 .form-control::placeholder {
   color: #a0aec0;
-  font-size: 0.85rem;
+  font-size: clamp(0.8rem, 1.3vw, 0.85rem);
 }
 
 /* ==========================
-   Select / Dropdown Styling
+   Select / Dropdown Styling - RESPONSIVE
 ========================== */
 .form-select {
   border: 2px solid #e2e8f0;
   border-radius: 6px;
-  padding: 10px 12px;
-  font-size: 0.9rem;
+  padding: clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
+  font-size: clamp(0.85rem, 1.5vw, 0.9rem);
   transition: all 0.3s ease;
   background-color: #f8fafc;
   cursor: pointer;
@@ -124,7 +126,8 @@ h1::after {
   background-position: right 12px center;
   background-size: 12px;
   padding-right: 36px;
-  height: 40px;
+  min-height: 40px;
+  width: 100%;
 }
 
 .form-select:focus {
@@ -139,7 +142,7 @@ h1::after {
   background-color: #ffffff;
 }
 
-/* File Input Styling */
+/* File Input Styling - RESPONSIVE */
 input[type="file"].form-control {
   padding: 10px;
   cursor: pointer;
@@ -150,12 +153,13 @@ input[type="file"].form-control::-webkit-file-upload-button {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
-  padding: 8px 20px;
+  padding: clamp(6px, 1.5vw, 8px) clamp(15px, 3vw, 20px);
   border-radius: 6px;
   cursor: pointer;
   font-weight: 500;
   margin-right: 15px;
   transition: all 0.3s ease;
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
 }
 
 input[type="file"].form-control::-webkit-file-upload-button:hover {
@@ -164,11 +168,13 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Image Preview
+   Image Preview - RESPONSIVE
 ========================== */
 .preview-image {
-  width: 300px;
-  height: 300px;
+  max-width: 100%;
+  width: clamp(200px, 40vw, 300px);
+  height: auto;
+  aspect-ratio: 1;
   object-fit: cover;
   border: 1px solid #ccc;
   display: block;
@@ -177,8 +183,10 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 .preview-image-dessin {
-  width: 150px;
-  height: 100px;
+  max-width: 100%;
+  width: clamp(100px, 20vw, 150px);
+  height: auto;
+  aspect-ratio: 3/2;
   border: 1px solid #ccc;
   border-radius: 6px;
   margin-top: 10px;
@@ -191,6 +199,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 .image-preview-container {
   position: relative;
   display: inline-block;
+  max-width: 100%;
 }
 
 .delete-image-btn {
@@ -201,10 +210,10 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   color: #fff;
   border: none;
   border-radius: 50%;
-  width: 30px;
-  height: 30px;
+  width: clamp(25px, 5vw, 30px);
+  height: clamp(25px, 5vw, 30px);
   cursor: pointer;
-  font-size: 16px;
+  font-size: clamp(14px, 2.5vw, 16px);
   display: none;
   z-index: 10;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
@@ -217,7 +226,9 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 .image-preview-container:hover .delete-image-btn {
-  display: block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .preview.deleted {
@@ -226,50 +237,53 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Row Spacing
+   Row Spacing - RESPONSIVE
 ========================== */
 .row.mb-2 {
-  margin-bottom: 15px;
+  margin-bottom: clamp(12px, 2vw, 15px);
 }
 
 .row.mb-3 {
-  margin-bottom: 20px;
+  margin-bottom: clamp(15px, 2.5vw, 20px);
 }
 
 .col {
-  padding-left: 8px;
-  padding-right: 8px;
+  padding-left: clamp(4px, 1vw, 8px);
+  padding-right: clamp(4px, 1vw, 8px);
 }
 
 /* ==========================
-   Radio Buttons Styling
+   Radio Buttons Styling - RESPONSIVE
 ========================== */
 .type-switch-section {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: clamp(15px, 2.5vw, 20px);
+  width: 100%;
 }
 
 .radio-container {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 40px;
-  padding: 8px 16px;
+  gap: clamp(20px, 4vw, 40px);
+  padding: clamp(6px, 1.5vw, 8px) clamp(12px, 2.5vw, 16px);
   border-radius: 10px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
   flex-shrink: 0;
-  min-width: 280px;
-  height: 45px;
+  min-width: min(280px, 100%);
+  height: auto;
+  min-height: 45px;
+  flex-wrap: wrap;
 }
 
 .radio-label {
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  padding: 6px 12px;
+  padding: clamp(6px, 1.5vw, 8px) clamp(10px, 2vw, 12px);
   border-radius: 6px;
   transition: all 0.3s ease;
   color: #4a5568;
@@ -277,7 +291,8 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   border: 2px solid #e2e8f0;
   position: relative;
   margin: 0;
-  height: 32px;
+  min-height: 32px;
+  white-space: nowrap;
 }
 
 .radio-label:hover {
@@ -288,8 +303,8 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 .radio-label input[type="radio"] {
-  width: 16px;
-  height: 16px;
+  width: clamp(14px, 2.5vw, 16px);
+  height: clamp(14px, 2.5vw, 16px);
   margin-right: 6px;
   cursor: pointer;
   accent-color: #667eea;
@@ -305,11 +320,11 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Buttons - General
+   Buttons - General - RESPONSIVE
 ========================== */
 .btn {
-  padding: 10px 20px;
-  font-size: 0.9rem;
+  padding: clamp(8px, 1.5vw, 10px) clamp(15px, 3vw, 20px);
+  font-size: clamp(0.8rem, 1.5vw, 0.9rem);
   font-weight: 600;
   border-radius: 6px;
   transition: all 0.3s ease;
@@ -317,10 +332,11 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   cursor: pointer;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  height: 40px;
+  min-height: 40px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 
 .btn:hover {
@@ -333,7 +349,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Button Variants
+   Button Variants - SAME
 ========================== */
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -415,22 +431,22 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Button Width Classes
+   Button Width Classes - RESPONSIVE
 ========================== */
 .w-15 {
   width: auto !important;
-  min-width: 130px;
+  min-width: min(130px, 100%);
   flex: 0 0 auto;
 }
 
 .w-25 {
   width: 25% !important;
-  min-width: 280px;
+  min-width: min(280px, 100%);
 }
 
 .w-30 {
   width: auto !important;
-  min-width: 200px;
+  min-width: min(200px, 100%);
   flex: 1;
 }
 
@@ -443,13 +459,14 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Reference Selection Row Layout
+   Reference Selection Row Layout - RESPONSIVE
 ========================== */
 .reference-selection-row {
   display: flex;
   gap: 15px;
   align-items: stretch;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .reference-selection-row .radio-container {
@@ -461,31 +478,36 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   flex: 1;
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+  min-width: 280px;
 }
 
 .reference-selection-row .input-group .form-select {
   flex: 1;
-  min-width: 200px;
+  min-width: min(200px, 100%);
 }
 
 .reference-selection-row .input-group .btn {
   flex-shrink: 0;
-  min-width: 130px;
+  min-width: min(130px, 100%);
   white-space: nowrap;
 }
 
 /* ==========================
-   Input Group Styling (3 Buttons in Row)
+   Input Group Styling - RESPONSIVE
 ========================== */
 .input-group {
   display: flex;
   gap: 8px;
   align-items: stretch;
+  flex-wrap: wrap;
+  width: 100%;
 }
 
 .input-group .form-select,
 .input-group .form-control {
   flex: 1;
+  min-width: 150px;
 }
 
 .input-group .btn {
@@ -497,7 +519,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Form Validation
+   Form Validation - SAME
 ========================== */
 .form-control.is-invalid {
   border-color: #f56565;
@@ -515,7 +537,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Loading Overlay
+   Loading Overlay - SAME
 ========================== */
 .loading-overlay {
   position: fixed;
@@ -542,8 +564,8 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   border: 8px solid #f3f3f3;
   border-top: 8px solid #667eea;
   border-radius: 50%;
-  width: 60px;
-  height: 60px;
+  width: clamp(50px, 10vw, 60px);
+  height: clamp(50px, 10vw, 60px);
   animation: spin 1s linear infinite;
 }
 
@@ -553,14 +575,15 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Alert Messages
+   Alert Messages - RESPONSIVE
 ========================== */
 .alert {
   border-radius: 8px;
-  padding: 15px 20px;
-  margin-bottom: 20px;
+  padding: clamp(12px, 2vw, 15px) clamp(15px, 3vw, 20px);
+  margin-bottom: clamp(15px, 2.5vw, 20px);
   border: none;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: clamp(0.85rem, 1.5vw, 1rem);
 }
 
 .alert-success {
@@ -584,16 +607,19 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Translation Modal Styles
+   Translation Modal Styles - RESPONSIVE
 ========================== */
 .modal-overlay {
   display: none;
   position: fixed;
-  top: 10%;
-  left: 30%;
-  width: 40vw;
-  height: 70vh;
-  background-color: rgba(0, 0, 0, 0.7);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 600px;
+  height: auto;
+  max-height: 90vh;
+  background-color: transparent;
   z-index: 10000;
   border-radius: 8px;
   align-items: center;
@@ -604,11 +630,23 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   display: flex !important;
 }
 
+.modal-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0vw;
+  height: 0vh;
+  background-color: rgba(0, 0, 0, 0.7);
+  z-index: -1;
+}
+
 .modal-overlay .modal {
   background: white;
   border-radius: 8px;
-  width: 40vw;
-  max-width: 600vw;
+  width: 100%;
+  max-width: 600px;
+  max-height: 85vh;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
   overflow-y: auto;
   position: relative;
@@ -618,18 +656,21 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 .modal-overlay .modal-header {
-  padding: 20px;
+  padding: clamp(15px, 3vw, 20px);
   border-bottom: 1px solid #ddd;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background-color: #f8f9fa;
   border-radius: 8px 8px 0 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .modal-overlay .modal-title {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: clamp(1rem, 2.5vw, 1.25rem);
   color: #333;
   font-weight: 600;
 }
@@ -637,16 +678,17 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 .modal-overlay .close-btn {
   background: none;
   border: none;
-  font-size: 1.8rem;
+  font-size: clamp(1.5rem, 3vw, 1.8rem);
   cursor: pointer;
   color: #666;
-  width: 35px;
-  height: 35px;
+  width: clamp(30px, 6vw, 35px);
+  height: clamp(30px, 6vw, 35px);
   display: flex;
   align-items: center;
   justify-content: center;
   line-height: 1;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .modal-overlay .close-btn:hover {
@@ -656,27 +698,30 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 .modal-overlay .modal-body {
-  padding: 30px;
+  padding: clamp(20px, 4vw, 30px);
   flex: 1;
+  overflow-y: auto;
 }
 
 .modal-overlay .translation-row {
-  margin-bottom: 25px;
+  margin-bottom: clamp(20px, 3vw, 25px);
 }
 
 .modal-overlay .language-label {
   margin-bottom: 8px;
   font-weight: 500;
   color: #495057;
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 1.8vw, 0.95rem);
 }
 
 .modal-overlay .translation-textarea {
   width: 100%;
-  padding: 12px;
+  padding: clamp(10px, 2vw, 12px);
   border: 1px solid #ced4da;
   border-radius: 4px;
-  font-size: 1rem;
+  font-size: clamp(0.9rem, 1.8vw, 1rem);
+  resize: vertical;
+  min-height: 60px;
 }
 
 .modal-overlay .translation-textarea:focus {
@@ -686,26 +731,34 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 .modal-overlay .modal-footer {
-  padding: 20px 30px;
+  padding: clamp(15px, 3vw, 20px) clamp(20px, 4vw, 30px);
   border-top: 1px solid #ddd;
   display: flex;
   justify-content: flex-end;
   gap: 10px;
   background-color: #f8f9fa;
   border-radius: 0 0 8px 8px;
+  position: sticky;
+  bottom: 0;
+  flex-wrap: wrap;
 }
 
-/* Ensure translate buttons are visible */
+/* Ensure translate buttons are visible - RESPONSIVE */
 .o_field_translate {
   margin-top: 5px;
-  padding: 5px 15px;
+  padding: clamp(5px, 1vw, 7px) clamp(12px, 2.5vw, 15px);
   background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.875rem;
+  font-size: clamp(0.8rem, 1.5vw, 0.875rem);
   font-weight: 500;
+  white-space: nowrap;
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .o_field_translate:hover {
@@ -713,9 +766,30 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Responsive Design
+   Responsive Design - ENHANCED
 ========================== */
-@media (max-width: 1200px) {
+
+/* Extra Large Desktops (1920px and up) */
+@media (min-width: 1920px) {
+  .container {
+    max-width: 1400px;
+  }
+}
+
+/* Large Desktops (1200px to 1919px) */
+@media (min-width: 1200px) and (max-width: 1919px) {
+  .container {
+    max-width: 1200px;
+  }
+}
+
+/* Medium Desktops and Tablets (992px to 1199px) */
+@media (min-width: 992px) and (max-width: 1199px) {
+  .container {
+    max-width: 960px;
+    padding: 30px;
+  }
+
   .reference-selection-row {
     flex-wrap: wrap;
   }
@@ -723,6 +797,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   .reference-selection-row .radio-container {
     width: 100%;
     justify-content: center;
+    margin-bottom: 15px;
   }
 
   .reference-selection-row .input-group {
@@ -730,25 +805,82 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   }
 }
 
-@media (max-width: 1024px) {
+/* Tablets (768px to 991px) */
+@media (min-width: 768px) and (max-width: 991px) {
+  .container {
+    padding: 25px;
+    width: 95%;
+  }
+
+  h1 {
+    font-size: 2rem;
+  }
+
+  .category {
+    font-size: 0.95rem;
+    padding: 11px 18px;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.9rem;
+    padding: 10px 12px;
+  }
+
+  .preview-image {
+    width: 250px;
+    height: 250px;
+  }
+
+  .reference-selection-row {
+    flex-wrap: wrap;
+  }
+
+  .reference-selection-row .radio-container {
+    width: 100%;
+    justify-content: center;
+    margin-bottom: 15px;
+  }
+
   .reference-selection-row .input-group {
+    width: 100%;
     flex-wrap: wrap;
   }
 
   .reference-selection-row .input-group .form-select {
     width: 100%;
     min-width: unset;
+    margin-bottom: 8px;
   }
 
   .reference-selection-row .input-group .btn {
     flex: 1;
-    min-width: unset;
+    min-width: calc(33.333% - 8px);
+  }
+
+  .input-group {
+    flex-wrap: wrap;
+  }
+
+  .input-group .btn {
+    min-width: calc(33.333% - 8px);
+  }
+
+  .modal-overlay {
+    width: 85vw;
+  }
+
+  .modal-overlay .modal {
+    width: 85vw;
+    max-width: 85vw;
   }
 }
 
-@media (max-width: 768px) {
+/* Small Tablets and Large Phones (576px to 767px) */
+@media (min-width: 576px) and (max-width: 767px) {
   .container {
     padding: 20px;
+    width: 95%;
   }
 
   h1 {
@@ -775,21 +907,23 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     flex-direction: column;
     gap: 15px;
     padding: 15px;
+    width: 100%;
   }
 
   .radio-label {
-    font-size: 1.1rem;
+    font-size: 1rem;
     width: 100%;
     justify-content: center;
   }
 
   .btn {
-    padding: 10px 20px;
-    font-size: 0.9rem;
+    padding: 10px 15px;
+    font-size: 0.85rem;
   }
 
   .input-group {
     flex-direction: column;
+    gap: 10px;
   }
 
   .input-group .btn {
@@ -797,21 +931,53 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     min-width: unset;
   }
 
+  .input-group .form-select,
+  .input-group .form-control {
+    width: 100%;
+    min-width: unset;
+  }
+
   .w-15,
   .w-30,
-  .w-55 {
+  .w-55,
+  .w-25 {
     width: 100% !important;
     min-width: unset;
   }
 
-  /* Translation Modal Responsive */
+  .reference-selection-row {
+    flex-direction: column;
+  }
+
+  .reference-selection-row .input-group {
+    flex-direction: column;
+  }
+
+  .reference-selection-row .input-group .btn {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .modal-overlay {
+    width: 90vw;
+  }
+
   .modal-overlay .modal {
     width: 90vw;
     max-width: 90vw;
   }
+
+  .modal-overlay .modal-footer {
+    flex-direction: column;
+  }
+
+  .modal-overlay .modal-footer .btn {
+    width: 100%;
+  }
 }
 
-@media (max-width: 576px) {
+/* Mobile Devices (below 576px) */
+@media (max-width: 575px) {
   body {
     padding: 10px 0;
   }
@@ -819,29 +985,187 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   .container {
     padding: 15px;
     border-radius: 10px;
+    width: 95%;
   }
 
   h1 {
     font-size: 1.5rem;
+    margin-bottom: 20px;
+  }
+
+  h1::after {
+    width: 60px;
   }
 
   .category {
     font-size: 0.85rem;
     padding: 8px 12px;
+    margin-top: 20px;
+    margin-bottom: 12px;
   }
 
-  /* Translation Modal Responsive */
+  .form-control,
+  .form-select {
+    font-size: 0.85rem;
+    padding: 8px 10px;
+  }
+
+  .preview-image {
+    width: 100%;
+    max-width: 200px;
+    height: auto;
+  }
+
+  .preview-image-dessin {
+    width: 100%;
+    max-width: 150px;
+  }
+
+  .radio-container {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+    width: 100%;
+  }
+
+  .radio-label {
+    font-size: 0.95rem;
+    width: 100%;
+    justify-content: center;
+    padding: 10px;
+  }
+
+  .btn {
+    padding: 10px 15px;
+    font-size: 0.8rem;
+    min-height: 38px;
+  }
+
+  .input-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .input-group .btn {
+    width: 100% !important;
+    min-width: unset;
+  }
+
+  .input-group .form-select,
+  .input-group .form-control {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .w-15,
+  .w-30,
+  .w-55,
+  .w-25 {
+    width: 100% !important;
+    min-width: unset;
+  }
+
+  .reference-selection-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .reference-selection-row .input-group {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .reference-selection-row .input-group .btn {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .modal-overlay {
+    width: 95vw;
+    max-height: 95vh;
+  }
+
   .modal-overlay .modal {
     width: 95vw;
     max-width: 95vw;
+    max-height: 90vh;
   }
 
   .modal-overlay .modal-body {
-    padding: 20px;
+    padding: 20px 15px;
   }
 
   .modal-overlay .modal-header,
   .modal-overlay .modal-footer {
-    padding: 15px 20px;
+    padding: 15px;
+  }
+
+  .modal-overlay .modal-footer {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .modal-overlay .modal-footer .btn {
+    width: 100%;
+  }
+
+  .o_field_translate {
+    width: 100%;
+    margin-top: 8px;
+  }
+
+  input[type="file"].form-control::-webkit-file-upload-button {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+/* Extra Small Mobile (below 400px) */
+@media (max-width: 399px) {
+  .container {
+    padding: 12px;
+  }
+
+  h1 {
+    font-size: 1.3rem;
+  }
+
+  .category {
+    font-size: 0.8rem;
+    padding: 7px 10px;
+  }
+
+  .form-control,
+  .form-select {
+    font-size: 0.8rem;
+    padding: 7px 9px;
+  }
+
+  .btn {
+    font-size: 0.75rem;
+    padding: 8px 12px;
+    min-height: 36px;
+  }
+
+  .radio-label {
+    font-size: 0.9rem;
+    padding: 8px;
+  }
+
+  input[type="file"].form-control::-webkit-file-upload-button {
+    padding: 5px 10px;
+    font-size: 0.7rem;
+    margin-right: 8px;
+  }
+}
+
+/* Landscape Orientation Adjustments */
+@media (max-height: 600px) and (orientation: landscape) {
+  .modal-overlay .modal {
+    max-height: 95vh;
+  }
+
+  .modal-overlay .modal-body {
+    max-height: calc(95vh - 140px);
   }
 }
