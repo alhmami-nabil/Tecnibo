@@ -12,13 +12,26 @@ DB_NAME = "FicheTechnique.db"
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'pdf'}
 
-app.config['MAX_CONTENT_LENGTH'] = 100 * 1024 * 1024  # 100 MB
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # Base path configuration
 BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
+
+# Fields that should NOT be copied (text fields that need translation)
+# NOTE: 'reference' and 'reference_menu' are NOT NULL in DB, so they always copy from French
+TRANSLATABLE_FIELDS = {
+    'variant', 'description',
+    'hauteur', 'largeur', 'epaisseur', 'epaisseur_battent', 'tolerance_hauteur',
+    'verre', 'battant', 'panneau', 'poids_porte_cloison', 'resistance_feu',
+    'nbn_s_01_400', 'nbn_en_iso_717_1'
+}
+# Add vue_eclatee fields
+for i in range(1, 23):
+    TRANSLATABLE_FIELDS.add(f'vue_eclatee_{i}')
+# Add dessin_technique_nom fields
+for i in range(1, 7):
+    TRANSLATABLE_FIELDS.add(f'dessin_technique_nom_{i}')
 
 
 # -------------------- HELPER: Get Base Path --------------------
@@ -251,9 +264,14 @@ def add_fiche():
         data_en = data_fr.copy()
         data_en["langue"] = "en"
 
-        # Appliquer les traductions EN
+        # Clear translatable fields first (don't copy French text)
+        for field in TRANSLATABLE_FIELDS:
+            if field in data_en:
+                data_en[field] = None
+
+        # Appliquer les traductions EN (only if provided)
         for key, value in en_translations.items():
-            if key in data_en and value:
+            if key in data_en and value and value.strip():
                 data_en[key] = value
 
         cols_en = ", ".join(data_en.keys())
@@ -266,9 +284,14 @@ def add_fiche():
         data_nl = data_fr.copy()
         data_nl["langue"] = "nl"
 
-        # Appliquer les traductions NL
+        # Clear translatable fields first (don't copy French text)
+        for field in TRANSLATABLE_FIELDS:
+            if field in data_nl:
+                data_nl[field] = None
+
+        # Appliquer les traductions NL (only if provided)
         for key, value in nl_translations.items():
-            if key in data_nl and value:
+            if key in data_nl and value and value.strip():
                 data_nl[key] = value
 
         cols_nl = ", ".join(data_nl.keys())
@@ -413,9 +436,14 @@ def update_fiche():
         # Préparer et mettre à jour la version EN
         data_en = data_fr.copy()
 
-        # Appliquer les traductions EN
+        # Clear translatable fields first (don't copy French text)
+        for field in TRANSLATABLE_FIELDS:
+            if field in data_en:
+                data_en[field] = None
+
+        # Appliquer les traductions EN (only if provided)
         for key, value in en_translations.items():
-            if key in data_en and value:
+            if key in data_en and value and value.strip():
                 data_en[key] = value
 
         # Si la version EN n'existe pas, la créer
@@ -437,9 +465,14 @@ def update_fiche():
         # Préparer et mettre à jour la version NL
         data_nl = data_fr.copy()
 
-        # Appliquer les traductions NL
+        # Clear translatable fields first (don't copy French text)
+        for field in TRANSLATABLE_FIELDS:
+            if field in data_nl:
+                data_nl[field] = None
+
+        # Appliquer les traductions NL (only if provided)
         for key, value in nl_translations.items():
-            if key in data_nl and value:
+            if key in data_nl and value and value.strip():
                 data_nl[key] = value
 
         # Si la version NL n'existe pas, la créer
