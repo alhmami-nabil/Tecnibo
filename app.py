@@ -12,9 +12,6 @@ DB_NAME = "FicheTechnique.db"
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'pdf'}
 
-# Access token
-ACCESS_TOKEN = "M4V8yOHFUsw1Q6ahtBR5WYwKVu7C0PDpAfVEhKW9zkKjePN7OfPrXV3G8IS7onCaD6TJJ1hfyf74lLN4ZZkS6np2OGtafZZclkY1k34ZQJ0tS4bMAtmIxZD8BqFtkCwCP1HkEtj93LXOpNlx9LLTNsZOe4uWJDMimOXvbAx6rNa7cAzXBlKyeuvxszqKiwOFh6muiVe5d70oqQUCdRgenv1geb52qpRblkhXdrjNiQsJ7WKtIzRZIbZkrX6ChnF0"  # Change this to your desired token
-
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
@@ -26,18 +23,6 @@ BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
 def get_base_url():
     """Returns base path for URL generation"""
     return BASE_PATH if BASE_PATH else ''
-
-
-# -------------------- LOGIN REQUIRED DECORATOR --------------------
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            base = get_base_url()
-            return redirect(f"{base}/login")
-        return f(*args, **kwargs)
-
-    return decorated_function
 
 
 # -------------------- DATABASE INIT --------------------
@@ -155,40 +140,6 @@ def extract_translations(form_data, lang_suffix):
     return translations
 
 
-# -------------------- LOGIN --------------------
-# @app.route("/login", methods=["GET", "POST"])
-# @app.route(f"{BASE_PATH}/login", methods=["GET", "POST"])
-# def login():
-#     base = get_base_url()
-#
-#     if request.method == "POST":
-#         token = request.form.get("token", "").strip()
-#
-#         if token == ACCESS_TOKEN:
-#             session['logged_in'] = True
-#             flash("Login successful!", "success")
-#             return redirect(f"{base}/?type=Cloison")
-#         else:
-#             flash("Invalid token. Please try again.", "danger")
-#             return render_template("login.html", base=base, error=True)
-#
-#     # If already logged in, redirect to home
-#     if session.get('logged_in'):
-#         return redirect(f"{base}/?type=Cloison")
-#
-#     return render_template("login.html", base=base)
-
-
-# -------------------- LOGOUT --------------------
-# @app.route("/logout")
-# @app.route(f"{BASE_PATH}/logout")
-# def logout():
-#     session.pop('logged_in', None)
-#     flash("You have been logged out.", "info")
-#     base = get_base_url()
-#     return redirect(f"{base}/login")
-
-
 # -------------------- HOME --------------------
 @app.route("/", methods=["GET"])
 @app.route(f"{BASE_PATH}/", methods=["GET"])
@@ -213,7 +164,6 @@ def home():
 # -------------------- ADD FICHE --------------------
 @app.route("/add_fiche", methods=["POST"])
 @app.route(f"{BASE_PATH}/add_fiche", methods=["POST"])
-@login_required
 def add_fiche():
     cpid = request.form.get("cpid")
     ref_type = request.form.get("type", "Cloison")
@@ -339,7 +289,6 @@ def add_fiche():
 # -------------------- GET FICHE --------------------
 @app.route("/get_fiche/<cpid>")
 @app.route(f"{BASE_PATH}/get_fiche/<cpid>")
-@login_required
 def get_fiche(cpid):
     conn = get_db_connection()
 
@@ -373,7 +322,6 @@ def get_fiche(cpid):
 # -------------------- UPDATE --------------------
 @app.route("/update_fiche", methods=["POST"])
 @app.route(f"{BASE_PATH}/update_fiche", methods=["POST"])
-@login_required
 def update_fiche():
     cpid = request.form.get("updateRef")
     ref_type = request.form.get("type", "Cloison")
@@ -522,7 +470,6 @@ def update_fiche():
 # -------------------- DELETE --------------------
 @app.route("/delete_fiche", methods=["POST"])
 @app.route(f"{BASE_PATH}/delete_fiche", methods=["POST"])
-@login_required
 def delete_fiche():
     cpid = request.form.get("deleteRef")
     ref_type = request.form.get("type", "Cloison")
@@ -555,7 +502,6 @@ def remove_last_part(value):
 # -------------------- CREATE EXPLODED VIEW --------------------
 @app.route('/create_exploded_view', methods=['POST'])
 @app.route(f"{BASE_PATH}/create_exploded_view", methods=['POST'])
-@login_required
 def create_exploded_view():
     file = request.files.get("vue_eclatee_image")
     base = get_base_url()
@@ -575,7 +521,6 @@ def create_exploded_view():
 
 @app.route('/save_annotations', methods=['POST'])
 @app.route(f"{BASE_PATH}/save_annotations", methods=['POST'])
-@login_required
 def save_annotations():
     data = request.json
     filename = data['filename']
