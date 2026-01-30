@@ -10,20 +10,15 @@
 </head>
 <body>
 <div class="Telecharger">
-    <!-- PDF Download -->
-    <button id="downloadBtn" type="button">
-        📄 Télécharger en PDF
+    <button id="downloadBtn">📄 Download as PDF</button>
+   <button onclick="window.location.href='?cpid={{ fiche.cpid }}&lang=fr'">
+        🇫🇷 French version
     </button>
-    <!-- Language Switch Buttons -->
-    <button type="button" onclick="window.location.href='?cpid={{ fiche.cpid }}&lang=nl'">
-        🇳🇱 Version néerlandaise
+    <button onclick="window.location.href='?cpid={{ fiche.cpid }}&lang=nl'">
+        🇳🇱 Dutch version
     </button>
-    <button type="button" onclick="window.location.href='?cpid={{ fiche.cpid }}&lang=en'">
-        🇬🇧 Version English
-    </button>
-    <!-- Back to Home -->
-    <button id="retourBtn" type="button" onclick="window.location.href='/'">
-        ← Retour à l'accueil
+    <button id="retourBtn" onclick="window.location.href='/'">
+        ← Back to home page
     </button>
 </div>
 
@@ -34,8 +29,16 @@
     <div class="d-flex mb-5">
       <div class="logo">TECNIBO</div>
       <div class="d-flex text-muted-header header-right">
-        <span class="FICHE" style="margin-right: 121px;">FICHE PRODUIT</span>
-        <span class="SECTION" style="margin-right: 56px;">{{ fiche.type|upper }}</span>
+        <span class="FICHE" style="margin-right: 121px;">PRODUCT DATA SHEET</span>
+        <span class="SECTION" style="margin-right: 56px;">
+          {% if fiche.type|lower == 'cloison' %}
+            PARTITION
+          {% elif fiche.type|lower == 'porte' %}
+            DOOR
+          {% else %}
+            {{ fiche.type|upper }}
+          {% endif %}
+        </span>
         <span class="CPID">{{ fiche.reference_menu|upper }}</span>
       </div>
     </div>
@@ -82,29 +85,29 @@
 
     <!-- DIMENSIONS DES ELEMENTS -->
     <div class="row table-row gx-0">
-      <div class="col-6 text-muted text-muted-dim border-half"><span>DIMENSIONS DES ELEMENTS</span></div>
+      <div class="col-6 text-muted text-muted-dim border-half"><span>DIMENSIONS OF THE ELEMENTS</span></div>
       <div class="col-6">
         <div class="d-flex align-items-center text-muted text-muted-dim border-half inner-row">
-          <span class="left">HAUTEUR</span>
+          <span class="left">HEIGHT</span>
           <span class="right">{{ fiche.hauteur }}</span>
         </div>
         <div class="d-flex align-items-center text-muted text-muted-larg border-half inner-row">
-          <span class="left">LARGEUR</span>
+          <span class="left">WIDTH</span>
           <span class="right">{{ fiche.largeur }}</span>
         </div>
         {% if fiche.type == 'Cloison' %}
         <div class="d-flex align-items-center text-muted border-half inner-row">
-          <span class="left">EPAISSEUR</span>
+          <span class="left">THICKNESS</span>
           <span class="right">{{ fiche.epaisseur }}</span>
         </div>
         {% else %}
         <div class="d-flex align-items-center text-muted border-half inner-row">
-          <span class="left">EPAISSEUR BATTENT</span>
+          <span class="left">THICKNESS OF FLIGHT</span>
           <span class="right">{{ fiche.epaisseur }}</span>
         </div>
         {% endif %}
         <div class="d-flex align-items-center text-muted border-half inner-row">
-          <span class="left">TOLERANCE EN HAUTEUR</span>
+          <span class="left">HEIGHT TOLERANCE</span>
           <span class="right">{{ fiche.tolerance_hauteur }}</span>
         </div>
       </div>
@@ -113,37 +116,37 @@
 
     <!-- MASSES VOLUMIQUES -->
     <div class="row table-row gx-0">
-      <div class="col-6 text-muted border-half"><span>MASSES VOLUMIQUES</span></div>
+      <div class="col-6 text-muted border-half"><span>DENSITIES</span></div>
       <div class="col-6">
         {% if fiche.type == 'Cloison' %}
           {% if fiche.verre %}
           <div class="d-flex align-items-center text-muted border-half inner-row">
-            <span class="left">VERRE</span>
+            <span class="left">GLASS</span>
             <span class="right">{{ fiche.verre }}</span>
           </div>
           {% endif %}
           {% if fiche.panneau %}
           <div class="d-flex align-items-center text-muted border-half inner-row">
-            <span class="left">PANNEAU</span>
+            <span class="left">SIGN</span>
             <span class="right">{{ fiche.panneau }}</span>
           </div>
           {% endif %}
           {% if fiche.poids_porte_cloison %}
           <div class="d-flex align-items-center text-muted border-half inner-row">
-            <span class="left">POIDS CLOISON</span>
+            <span class="left">PARTITION WEIGHT</span>
             <span class="right">{{ fiche.poids_porte_cloison }}</span>
           </div>
           {% endif %}
         {% else %}
           {% if fiche.battant %}
           <div class="d-flex align-items-center text-muted border-half inner-row">
-            <span class="left">BATTANT</span>
+            <span class="left">FLYING</span>
             <span class="right">{{ fiche.battant }}</span>
           </div>
           {% endif %}
           {% if fiche.poids_porte_cloison %}
           <div class="d-flex align-items-center text-muted border-half inner-row">
-            <span class="left">POIDS PORTE</span>
+            <span class="left">WEIGHT CARRIER</span>
             <span class="right">{{ fiche.poids_porte_cloison }}</span>
           </div>
           {% endif %}
@@ -154,10 +157,10 @@
 
     <!-- RESISTANCE AU FEU -->
     <div class="row table-row gx-0">
-      <div class="col-6 text-muted border-half"><span>RESISTANCE AU FEU</span></div>
+      <div class="col-6 text-muted border-half"><span>FIRE RESISTANCE</span></div>
       <div class="col-6">
         <div class="d-flex align-items-center text-muted border-half inner-row">
-          <span class="left">RESISTANCE AU FEU EN STANDARD</span>
+          <span class="left">STANDARD FIRE RESISTANCE</span>
           <span class="right">{{ fiche.resistance_feu }}</span>
         </div>
       </div>
@@ -165,7 +168,7 @@
 
     <!-- PERFORMANCE ACOUSTIQUE -->
     <div class="row table-row gx-0">
-      <div class="col-6 text-muted border-half"><span>PERFORMANCE ACOUSTIQUE</span></div>
+      <div class="col-6 text-muted border-half"><span>ACOUSTIC PERFORMANCE</span></div>
       <div class="col-6">
         <div class="d-flex align-items-center text-muted border-half inner-row">
           <span class="left">NBN S 01-400</span>
@@ -183,14 +186,14 @@
     <div class="row table-row gx-0">
       <div class="col-6 text-muted border-half">
         <div class="padding-test">
-          TESTÉE EN LABORATOIRE SUIVANT NORME RÉFÉRENCE NBN EN ISO 10140-2 <br>ET NBN EN ISO 717-1:2
+          TESTED IN THE LABORATORY IN ACCORDANCE WITH STANDARDS NBN EN ISO 10140-2 <br>AND NBN EN ISO 717-1:2
         </div>
       </div>
       <div class="col-6 border-half text-muted">
         <div class="padding-test">
-          NOS PRODUITS S'INSCRIVENT DANS UNE DÉMARCHE ÉCO-RESPONSABLE.<br>
-          MIS EN FORME EN EUROPE AVEC DES BOIS PROVENANT DE SOURCES FORESTIÈRES <br>
-          EXCLUSIVEMENT EUROPÉENNES ET ISSUS DE SOURCES CERTIFIÉES PEFC OU FSC.
+          OUR PRODUCTS ARE PART OF AN ECO-RESPONSIBLE APPROACH.<br>
+          MANUFACTURED IN EUROPE USING WOOD FROM EXCLUSIVELY EUROPEAN <br>
+          FORESTS AND FROM PEFC OR FSC CERTIFIED SOURCES.
         </div>
       </div>
     </div>
@@ -268,8 +271,16 @@
     <div class="d-flex mb-5">
       <div class="logo2">TECNIBO</div>
       <div class="d-flex text-muted-header2 header-right2">
-        <span class="FICHE" style="margin-right: 121px;">FICHE PRODUIT</span>
-        <span class="SECTION" style="margin-right: 56px;">{{ fiche.type|upper }}</span>
+        <span class="FICHE" style="margin-right: 121px;">PRODUCT DATA SHEET</span>
+        <span class="SECTION" style="margin-right: 56px;">
+          {% if fiche.type|lower == 'cloison' %}
+            PARTITION
+          {% elif fiche.type|lower == 'porte' %}
+            DOOR
+          {% else %}
+            {{ fiche.type|upper }}
+          {% endif %}
+        </span>
         <span class="CPID">{{ fiche.reference_menu|upper }}</span>
       </div>
     </div>
@@ -331,8 +342,16 @@
     <div class="d-flex mb-5">
       <div class="logo2">TECNIBO</div>
       <div class="d-flex text-muted-header2 header-right2">
-        <span class="FICHE" style="margin-right: 121px;">FICHE PRODUIT</span>
-        <span class="SECTION" style="margin-right: 56px;">{{ fiche.type|upper }}</span>
+        <span class="FICHE" style="margin-right: 121px;">PRODUCT DATA SHEET</span>
+        <span class="SECTION" style="margin-right: 56px;">
+          {% if fiche.type|lower == 'cloison' %}
+            PARTITION
+          {% elif fiche.type|lower == 'porte' %}
+            DOOR
+          {% else %}
+            {{ fiche.type|upper }}
+          {% endif %}
+        </span>
         <span class="CPID">{{ fiche.reference_menu|upper }}</span>
       </div>
     </div>
@@ -342,7 +361,7 @@
     <div class="main4">
       <div class="row table-row gx-0">
         <div class="col-8 border-half">
-          <div class="DesFlecHV">COUPE HORIZONTALE</div>
+          <div class="DesFlecHV">HORIZONTAL CUT</div>
           <div class="row Horizontal1">
             <div class="col-6">
               <div class="w3-container">
@@ -421,7 +440,7 @@
           </div>
         </div>
         <div class="col-4 border-half">
-          <div class="DesFlecHV">COUPE VERTICALE</div>
+          <div class="DesFlecHV">VERTICAL CUT</div>
           {% if fiche.dessin_technique_6 %}
           <div class="vertical">
             <img src="{{ url_for('static', filename=fiche.dessin_technique_6) }}">

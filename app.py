@@ -1,6 +1,7 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify, flash
 import sqlite3
 import os
+from functools import wraps
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont
 
@@ -10,6 +11,9 @@ app.secret_key = "supersecretkey"
 DB_NAME = "FicheTechnique.db"
 UPLOAD_FOLDER = "static/uploads"
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'pdf'}
+
+# Access token
+ACCESS_TOKEN = "M4V8yOHFUsw1Q6ahtBR5WYwKVu7C0PDpAfVEhKW9zkKjePN7OfPrXV3G8IS7onCaD6TJJ1hfyf74lLN4ZZkS6np2OGtafZZclkY1k34ZQJ0tS4bMAtmIxZD8BqFtkCwCP1HkEtj93LXOpNlx9LLTNsZOe4uWJDMimOXvbAx6rNa7cAzXBlKyeuvxszqKiwOFh6muiVe5d70oqQUCdRgenv1geb52qpRblkhXdrjNiQsJ7WKtIzRZIbZkrX6ChnF0"  # Change this to your desired token
 
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -22,6 +26,18 @@ BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
 def get_base_url():
     """Returns base path for URL generation"""
     return BASE_PATH if BASE_PATH else ''
+
+
+# -------------------- LOGIN REQUIRED DECORATOR --------------------
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            base = get_base_url()
+            return redirect(f"{base}/login")
+        return f(*args, **kwargs)
+
+    return decorated_function
 
 
 # -------------------- DATABASE INIT --------------------
@@ -128,20 +144,56 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def extract_nl_translations(form_data):
-    """Extract NL translations from form data (fields ending with _nl)"""
-    nl_data = {}
+def extract_translations(form_data, lang_suffix):
+    """Extract translations from form data (fields ending with specified language suffix)"""
+    translations = {}
+    suffix = f"_{lang_suffix}"
     for key, value in form_data.items():
-        if key.endswith('_nl'):
-            original_key = key[:-3]  # Remove '_nl' suffix
-            nl_data[original_key] = value.strip() if value else None
-    return nl_data
+        if key.endswith(suffix):
+            original_key = key[:-len(suffix)]  # Remove language suffix
+            translations[original_key] = value.strip() if value else None
+    return translations
+
+
+# -------------------- LOGIN --------------------
+# @app.route("/login", methods=["GET", "POST"])
+# @app.route(f"{BASE_PATH}/login", methods=["GET", "POST"])
+# def login():
+#     base = get_base_url()
+#
+#     if request.method == "POST":
+#         token = request.form.get("token", "").strip()
+#
+#         if token == ACCESS_TOKEN:
+#             session['logged_in'] = True
+#             flash("Login successful!", "success")
+#             return redirect(f"{base}/?type=Cloison")
+#         else:
+#             flash("Invalid token. Please try again.", "danger")
+#             return render_template("login.html", base=base, error=True)
+#
+#     # If already logged in, redirect to home
+#     if session.get('logged_in'):
+#         return redirect(f"{base}/?type=Cloison")
+#
+#     return render_template("login.html", base=base)
+
+
+# -------------------- LOGOUT --------------------
+# @app.route("/logout")
+# @app.route(f"{BASE_PATH}/logout")
+# def logout():
+#     session.pop('logged_in', None)
+#     flash("You have been logged out.", "info")
+#     base = get_base_url()
+#     return redirect(f"{base}/login")
 
 
 # -------------------- HOME --------------------
 @app.route("/", methods=["GET"])
 @app.route(f"{BASE_PATH}/", methods=["GET"])
 def home():
+    # Check if user is logged in
     type_selected = request.args.get("type", "Cloison")
     base = get_base_url()
 
@@ -161,6 +213,7 @@ def home():
 # -------------------- ADD FICHE --------------------
 @app.route("/add_fiche", methods=["POST"])
 @app.route(f"{BASE_PATH}/add_fiche", methods=["POST"])
+@login_required
 def add_fiche():
     cpid = request.form.get("cpid")
     ref_type = request.form.get("type", "Cloison")
@@ -194,16 +247,17 @@ def add_fiche():
     data_fr = {}
     for key, value in request.form.items():
         if key not in ["previous_ref", "updateRef", "deleteRef"] and not key.startswith("delete_") and not key.endswith(
-                "_nl"):
+                "_nl") and not key.endswith("_en"):
             data_fr[key] = value.strip() if value else None
 
     data_fr["type"] = ref_type
     data_fr["langue"] = "fr"
 
-    # Extraire les traductions NL
-    nl_translations = extract_nl_translations(request.form)
+    # Extraire les traductions EN et NL
+    en_translations = extract_translations(request.form, "en")
+    nl_translations = extract_translations(request.form, "nl")
 
-    # Gérer les fichiers uploadés (partagés entre FR et NL)
+    # Gérer les fichiers uploadés (partagés entre FR, EN et NL)
     file_fields = [
         "photo_produit",
         "dessin_technique_1", "dessin_technique_2", "dessin_technique_3",
@@ -241,6 +295,21 @@ def add_fiche():
 
         conn.execute(f"INSERT INTO fiche_technique ({cols_fr}) VALUES ({placeholders_fr})", values_fr)
 
+        # Créer la version EN
+        data_en = data_fr.copy()
+        data_en["langue"] = "en"
+
+        # Appliquer les traductions EN
+        for key, value in en_translations.items():
+            if key in data_en and value:
+                data_en[key] = value
+
+        cols_en = ", ".join(data_en.keys())
+        placeholders_en = ", ".join(["?"] * len(data_en))
+        values_en = list(data_en.values())
+
+        conn.execute(f"INSERT INTO fiche_technique ({cols_en}) VALUES ({placeholders_en})", values_en)
+
         # Créer la version NL
         data_nl = data_fr.copy()
         data_nl["langue"] = "nl"
@@ -257,7 +326,7 @@ def add_fiche():
         conn.execute(f"INSERT INTO fiche_technique ({cols_nl}) VALUES ({placeholders_nl})", values_nl)
 
         conn.commit()
-        flash(f"CPID '{cpid}' ajoutée avec succès en FR et NL !", "success")
+        flash(f"CPID '{cpid}' ajoutée avec succès en FR, EN et NL !", "success")
     except Exception as e:
         conn.rollback()
         flash(f"Erreur lors de l'ajout : {e}", "danger")
@@ -270,11 +339,17 @@ def add_fiche():
 # -------------------- GET FICHE --------------------
 @app.route("/get_fiche/<cpid>")
 @app.route(f"{BASE_PATH}/get_fiche/<cpid>")
+@login_required
 def get_fiche(cpid):
     conn = get_db_connection()
 
     fr = conn.execute(
         "SELECT * FROM fiche_technique WHERE cpid=? AND langue='fr'",
+        (cpid,)
+    ).fetchone()
+
+    en = conn.execute(
+        "SELECT * FROM fiche_technique WHERE cpid=? AND langue='en'",
         (cpid,)
     ).fetchone()
 
@@ -290,6 +365,7 @@ def get_fiche(cpid):
 
     return jsonify({
         "fr": dict(fr),
+        "en": dict(en) if en else None,
         "nl": dict(nl) if nl else None
     })
 
@@ -297,6 +373,7 @@ def get_fiche(cpid):
 # -------------------- UPDATE --------------------
 @app.route("/update_fiche", methods=["POST"])
 @app.route(f"{BASE_PATH}/update_fiche", methods=["POST"])
+@login_required
 def update_fiche():
     cpid = request.form.get("updateRef")
     ref_type = request.form.get("type", "Cloison")
@@ -309,9 +386,13 @@ def update_fiche():
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
-    # Récupérer les versions FR et NL existantes
+    # Récupérer les versions FR, EN et NL existantes
     existing_fr = conn.execute(
         "SELECT * FROM fiche_technique WHERE cpid=? AND langue='fr'", (cpid,)
+    ).fetchone()
+
+    existing_en = conn.execute(
+        "SELECT * FROM fiche_technique WHERE cpid=? AND langue='en'", (cpid,)
     ).fetchone()
 
     existing_nl = conn.execute(
@@ -327,13 +408,14 @@ def update_fiche():
     data_fr = {}
     for k, v in request.form.items():
         if k not in ["updateRef", "deleteRef", "previous_ref"] and not k.startswith("delete_") and not k.endswith(
-                "_nl"):
+                "_nl") and not k.endswith("_en"):
             data_fr[k] = v
 
     data_fr["type"] = ref_type
 
-    # Extraire les traductions NL
-    nl_translations = extract_nl_translations(request.form)
+    # Extraire les traductions EN et NL
+    en_translations = extract_translations(request.form, "en")
+    nl_translations = extract_translations(request.form, "nl")
 
     # Gérer les fichiers
     files = [
@@ -378,7 +460,31 @@ def update_fiche():
         values_fr = list(data_fr.values()) + [cpid, "fr"]
         conn.execute(f"UPDATE fiche_technique SET {set_clause_fr} WHERE cpid=? AND langue=?", values_fr)
 
-        # Préparer les données NL (basées sur FR + traductions)
+        # Préparer et mettre à jour la version EN
+        data_en = data_fr.copy()
+
+        # Appliquer les traductions EN
+        for key, value in en_translations.items():
+            if key in data_en and value:
+                data_en[key] = value
+
+        # Si la version EN n'existe pas, la créer
+        if not existing_en:
+            data_en["cpid"] = cpid
+            data_en["langue"] = "en"
+
+            cols_en = ", ".join(data_en.keys())
+            placeholders_en = ", ".join(["?"] * len(data_en))
+            values_en = list(data_en.values())
+
+            conn.execute(f"INSERT INTO fiche_technique ({cols_en}) VALUES ({placeholders_en})", values_en)
+        else:
+            # Mettre à jour la version EN existante
+            set_clause_en = ", ".join([f"{k}=?" for k in data_en.keys()])
+            values_en = list(data_en.values()) + [cpid, "en"]
+            conn.execute(f"UPDATE fiche_technique SET {set_clause_en} WHERE cpid=? AND langue=?", values_en)
+
+        # Préparer et mettre à jour la version NL
         data_nl = data_fr.copy()
 
         # Appliquer les traductions NL
@@ -403,7 +509,7 @@ def update_fiche():
             conn.execute(f"UPDATE fiche_technique SET {set_clause_nl} WHERE cpid=? AND langue=?", values_nl)
 
         conn.commit()
-        flash(f"CPID '{cpid}' mise à jour avec succès en FR et NL !", "success")
+        flash(f"CPID '{cpid}' mise à jour avec succès en FR, EN et NL !", "success")
     except Exception as e:
         conn.rollback()
         flash(f"Erreur lors de la mise à jour : {e}", "danger")
@@ -416,6 +522,7 @@ def update_fiche():
 # -------------------- DELETE --------------------
 @app.route("/delete_fiche", methods=["POST"])
 @app.route(f"{BASE_PATH}/delete_fiche", methods=["POST"])
+@login_required
 def delete_fiche():
     cpid = request.form.get("deleteRef")
     ref_type = request.form.get("type", "Cloison")
@@ -427,11 +534,11 @@ def delete_fiche():
 
     try:
         conn = get_db_connection()
-        # Supprimer les deux versions (FR et NL)
+        # Supprimer toutes les versions (FR, EN et NL)
         conn.execute("DELETE FROM fiche_technique WHERE cpid=?", (cpid,))
         conn.commit()
         conn.close()
-        flash(f"CPID '{cpid}' supprimée avec succès (versions FR et NL) !", "success")
+        flash(f"CPID '{cpid}' supprimée avec succès (versions FR, EN et NL) !", "success")
     except Exception as e:
         flash(f"Erreur lors de la suppression: {e}", "danger")
 
@@ -448,6 +555,7 @@ def remove_last_part(value):
 # -------------------- CREATE EXPLODED VIEW --------------------
 @app.route('/create_exploded_view', methods=['POST'])
 @app.route(f"{BASE_PATH}/create_exploded_view", methods=['POST'])
+@login_required
 def create_exploded_view():
     file = request.files.get("vue_eclatee_image")
     base = get_base_url()
@@ -467,6 +575,7 @@ def create_exploded_view():
 
 @app.route('/save_annotations', methods=['POST'])
 @app.route(f"{BASE_PATH}/save_annotations", methods=['POST'])
+@login_required
 def save_annotations():
     data = request.json
     filename = data['filename']
@@ -583,10 +692,13 @@ def index():
     if not fiche:
         return "Référence introuvable", 404
 
-    if lang == "nl":
+    # Route to appropriate template based on language
+    if lang == "en":
+        return render_template("indexHaasEN.html", fiche=fiche, lang="en", base=base)
+    elif lang == "nl":
         return render_template("indexHaasNL.html", fiche=fiche, lang="nl", base=base)
-
-    return render_template("indexHaas.html", fiche=fiche, lang="fr", base=base)
+    else:
+        return render_template("indexHaas.html", fiche=fiche, lang="fr", base=base)
 
 
 # -------------------- RUN --------------------

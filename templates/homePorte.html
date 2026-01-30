@@ -44,7 +44,7 @@
 
 
 
-   <!-- Translation Modal -->
+<!-- Translation Modal avec TEXTAREA au lieu d'INPUT -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
     <div class="modal-header">
@@ -53,11 +53,15 @@
     </div>
     <div class="modal-body">
       <div class="translation-row">
-        <div class="language-label"><strong>French (BE) / Français (BE)</strong></div>
+        <div class="language-label"><strong>🇫🇷 French (BE) / Français (BE)</strong></div>
         <textarea class="translation-textarea" id="trans_fr" placeholder="Traduction française" rows="3"></textarea>
       </div>
       <div class="translation-row">
-        <div class="language-label">Dutch (BE) / Nederlands (BE)</div>
+        <div class="language-label">🇬🇧 English (BE) / English (BE)</div>
+        <textarea class="translation-textarea" id="trans_en" placeholder="English translation" rows="3"></textarea>
+      </div>
+      <div class="translation-row">
+        <div class="language-label">🇳🇱 Dutch (BE) / Nederlands (BE)</div>
         <textarea class="translation-textarea" id="trans_nl" placeholder="Nederlandse vertaling" rows="3"></textarea>
       </div>
     </div>
@@ -139,6 +143,27 @@
       {% endfor %}
       {% for i in range(1, 7) %}
       <input type="hidden" name="dessin_technique_nom_{{ i }}_nl" id="dessin_technique_nom_{{ i }}_nl">
+      {% endfor %}
+
+      <!-- Hidden fields pour les traductions EN -->
+      <input type="hidden" name="reference_en" id="reference_en">
+      <input type="hidden" name="reference_menu_en" id="reference_menu_en">
+      <input type="hidden" name="variant_en" id="variant_en">
+      <input type="hidden" name="description_en" id="description_en">
+      <input type="hidden" name="hauteur_en" id="hauteur_en">
+      <input type="hidden" name="largeur_en" id="largeur_en">
+      <input type="hidden" name="epaisseur_nl" id="epaisseur_en">
+      <input type="hidden" name="tolerance_hauteur_en" id="tolerance_hauteur_en">
+      <input type="hidden" name="battant_en" id="battant_en">
+      <input type="hidden" name="poids_porte_cloison_en" id="poids_porte_cloison_en">
+      <input type="hidden" name="resistance_feu_en" id="resistance_feu_en">
+      <input type="hidden" name="nbn_s_01_400_en" id="nbn_s_01_400_en">
+      <input type="hidden" name="nbn_en_iso_717_1_en" id="nbn_en_iso_717_1_en">
+      {% for i in range(1, 23) %}
+      <input type="hidden" name="vue_eclatee_{{ i }}_en" id="vue_eclatee_{{ i }}_en">
+      {% endfor %}
+      {% for i in range(1, 7) %}
+      <input type="hidden" name="dessin_technique_nom_{{ i }}_en" id="dessin_technique_nom_{{ i }}_en">
       {% endfor %}
 
       <h1>Ajouter Fiche Technique - Porte</h1>
@@ -374,7 +399,6 @@
 
   <!-- JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="{{ url_for('static', filename='js/gate-check.js') }}"></script>
   <script src="{{ url_for('static', filename='js/home.js') }}"></script>
 
 </body>

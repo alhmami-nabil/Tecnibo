@@ -26,12 +26,12 @@ document.querySelectorAll('.title').forEach(el => {
 const textLength = el.textContent.trim().length;
 
 const fontSizes = {
-13: 88, 14: 81, 15: 74, 16: 66, 17: 64,
-18: 60, 19: 56, 20: 52, 21: 49, 22: 48,
-23: 47, 24: 44, 25: 40
+12: 85 ,13: 80, 14: 81, 15: 75, 16: 66, 17: 64,
+18: 60, 19: 58, 20: 54, 21: 52, 22: 50,
+23: 47, 24: 47, 25: 43
 };
 
-const fontSize = fontSizes[textLength] || (textLength < 13 ? 88 : 40);
+const fontSize = fontSizes[textLength] || (textLength < 12 ? 85 : 43);
 el.style.fontSize = fontSize + "px";
 });
 

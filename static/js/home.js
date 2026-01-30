@@ -112,9 +112,11 @@ window.addEventListener('DOMContentLoaded', function() {
                     }
 
                     const fr = data.fr || {};
+                    const en = data.en || {};
                     const nl = data.nl || {};
 
                     console.log('✅ Loaded FR data:', fr);
+                    console.log('✅ Loaded EN data:', en);
                     console.log('✅ Loaded NL data:', nl);
 
                     /* ------------------------
@@ -126,6 +128,19 @@ window.addEventListener('DOMContentLoaded', function() {
                         const input = document.querySelector(`[name="${k}"]`);
                         if (input && input.type !== "file") {
                             input.value = v || "";
+                        }
+                    }
+
+                    /* ------------------------
+                       FILL EN HIDDEN FIELDS
+                    ------------------------ */
+                    for (const [k, v] of Object.entries(en)) {
+                        if (k === 'id' || k === 'langue' || k === 'type') continue;
+
+                        const inputEN = document.getElementById(k + "_en");
+                        if (inputEN) {
+                            inputEN.value = v || "";
+                            console.log(`Set ${k}_en = ${v}`);
                         }
                     }
 
@@ -236,7 +251,7 @@ function clearForm() {
     console.log('🧹 Clearing form...');
 
     // Clear all text inputs and textareas except updateRef
-    document.querySelectorAll('input[type="text"], input[type="hidden"][name$="_nl"], textarea').forEach(input => {
+    document.querySelectorAll('input[type="text"], input[type="hidden"][name$="_nl"], input[type="hidden"][name$="_en"], textarea').forEach(input => {
         if (input.id !== 'updateRef' && input.name !== 'type') {
             input.value = '';
         }
@@ -585,13 +600,7 @@ function handleEditorClick(e) {
         return;
     }
 
-    // Check if ID already exists
-    const existingAnnotation = editorAnnotations.find(ann => ann.id === id);
-    if (existingAnnotation) {
-        alert(`Le numéro ${id} existe déjà. Veuillez choisir un autre numéro.`);
-        return;
-    }
-
+    // Allow duplicate IDs - no check needed
     editorAnnotations.push({ id, x, y, side });
     nextAnnotationId = Math.max(nextAnnotationId, id + 1);
 
@@ -727,7 +736,7 @@ function confirmDelete() {
         return;
     }
 
-    if (confirm(`Êtes-vous sûr de vouloir supprimer la fiche "${ref}" (versions FR et NL) ?`)) {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer la fiche "${ref}" (versions FR, EN et NL) ?`)) {
         const base = getBasePath();
         const form = document.createElement("form");
         form.method = "POST";
@@ -763,13 +772,15 @@ document.addEventListener('DOMContentLoaded', function () {
   const saveBtn = document.getElementById('saveBtn');
   const modalTitle = document.getElementById('modalTitle');
   const inputFR = document.getElementById('trans_fr');
+  const inputEN = document.getElementById('trans_en');
   const inputNL = document.getElementById('trans_nl');
 
   let currentField = null;
   let currentInput = null;
+  let currentInputEN = null;
   let currentInputNL = null;
 
-  // Open modal when 🌐 🇫🇷 ⇄ 🇳🇱 button is clicked
+  // Open modal when 🌐 Traduire button is clicked
   document.querySelectorAll('.o_field_translate').forEach(btn => {
     btn.addEventListener('click', function (e) {
       e.preventDefault();
@@ -782,6 +793,9 @@ document.addEventListener('DOMContentLoaded', function () {
       currentInput =
         document.querySelector(`[name="${currentField}"]`) ||
         document.getElementById(currentField);
+
+      // Find EN hidden input
+      currentInputEN = document.getElementById(currentField + '_en');
 
       // Find NL hidden input
       currentInputNL = document.getElementById(currentField + '_nl');
@@ -796,6 +810,9 @@ document.addEventListener('DOMContentLoaded', function () {
       // Load FR value
       inputFR.value = currentInput.value || '';
 
+      // Load EN value if exists
+      inputEN.value = currentInputEN ? (currentInputEN.value || '') : '';
+
       // Load NL value if exists
       inputNL.value = currentInputNL ? (currentInputNL.value || '') : '';
 
@@ -804,7 +821,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
-  // Save button - saves both FR and NL values
+  // Save button - saves FR, EN, and NL values
   saveBtn.addEventListener('click', function () {
     console.log('Save clicked');
 
@@ -812,6 +829,12 @@ document.addEventListener('DOMContentLoaded', function () {
     if (currentInput) {
       currentInput.value = inputFR.value;
       console.log('Saved FR value:', inputFR.value);
+    }
+
+    // Save EN value
+    if (currentInputEN) {
+      currentInputEN.value = inputEN.value;
+      console.log('Saved EN value:', inputEN.value);
     }
 
     // Save NL value
@@ -846,8 +869,10 @@ document.addEventListener('DOMContentLoaded', function () {
     modalOverlay.classList.remove('active');
     currentField = null;
     currentInput = null;
+    currentInputEN = null;
     currentInputNL = null;
     inputFR.value = '';
+    inputEN.value = '';
     inputNL.value = '';
   }
 });

@@ -592,7 +592,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   top: 10%;
   left: 30%;
   width: 40vw;
-  height: 55vh;
+  height: 70vh;
   background-color: rgba(0, 0, 0, 0.7);
   z-index: 10000;
   border-radius: 8px;
