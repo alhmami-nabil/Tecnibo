@@ -22,17 +22,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
 document.querySelectorAll('.title').forEach(el => {
 
-// 2️⃣ Dynamic font sizing
-const textLength = el.textContent.trim().length;
+  // Remove spaces before counting characters
+  const textLength = el.textContent.replace(/\s+/g, '').length;
 
-const fontSizes = {
-12: 85 ,13: 80, 14: 81, 15: 75, 16: 66, 17: 64,
-18: 60, 19: 58, 20: 54, 21: 52, 22: 50,
-23: 47, 24: 47, 25: 43
-};
+  const fontSizes = {
+    12: 80, 13: 74, 14: 70, 15: 63, 16: 60, 17: 55,
+    18: 52, 19: 49, 20: 47, 21: 45, 22: 43,
+    23: 41, 24: 39, 25: 37
+  };
 
-const fontSize = fontSizes[textLength] || (textLength < 12 ? 85 : 43);
-el.style.fontSize = fontSize + "px";
+  const fontSize = fontSizes[textLength] || (textLength < 12 ? 80 : 37);
+  el.style.fontSize = fontSize + "px";
 });
 
 // Select all elements that have the class "dash"
