@@ -4,7 +4,7 @@
             cookieName: 'cf_upload_gate',
             
             // URL to redirect if cookie exists
-            redirectUrl: 'https://backend.tecnibo.com/tools/fiches',
+            redirectUrl: 'https://backend.tecnibo.com',
             
             // Delay before redirect (in milliseconds)
             redirectDelay: 1500
