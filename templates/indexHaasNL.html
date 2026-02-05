@@ -85,7 +85,7 @@
 
     <!-- DIMENSIONS DES ELEMENTS -->
     <div class="row table-row gx-0">
-      <div class="col-6 text-muted text-muted-dim border-half"><span>AFMETINGEN VAN DE ELEMENTEN</span></div>
+      <div class="col-6 text-muted text-muted-dim border-half"><span>AFMETINGEN</span></div>
       <div class="col-6">
         <div class="d-flex align-items-center text-muted text-muted-dim border-half inner-row">
           <span class="left">HOOGTE</span>
@@ -116,7 +116,7 @@
 
     <!-- MASSES VOLUMIQUES -->
     <div class="row table-row gx-0">
-      <div class="col-6 text-muted border-half"><span>VOLUMINEUZE MASSAS</span></div>
+      <div class="col-6 text-muted border-half"><span>GEWICHT</span></div>
       <div class="col-6">
         {% if fiche.type == 'Cloison' %}
           {% if fiche.verre %}
@@ -168,7 +168,7 @@
 
     <!-- PERFORMANCE ACOUSTIQUE -->
     <div class="row table-row gx-0">
-      <div class="col-6 text-muted border-half"><span>AKOESTISCHE PRESTATIE</span></div>
+      <div class="col-6 text-muted border-half"><span>AKOESTISCHE PRESTATIES</span></div>
       <div class="col-6">
         <div class="d-flex align-items-center text-muted border-half inner-row">
           <span class="left">NBN S 01-400</span>
@@ -361,7 +361,7 @@
     <div class="main4">
       <div class="row table-row gx-0">
         <div class="col-8 border-half">
-          <div class="DesFlecHV">HORIZONTALE SNIJWERK</div>
+          <div class="DesFlecHV">HORIZONTALE SNEDE</div>
           <div class="row Horizontal1">
             <div class="col-6">
               <div class="w3-container">
@@ -440,7 +440,7 @@
           </div>
         </div>
         <div class="col-4 border-half">
-          <div class="DesFlecHV">VERTICALE SNIJBEURT</div>
+          <div class="DesFlecHV">VERTICALE SNEDE</div>
           {% if fiche.dessin_technique_6 %}
           <div class="vertical">
             <img src="{{ url_for('static', filename=fiche.dessin_technique_6) }}">
