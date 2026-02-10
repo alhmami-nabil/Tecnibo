@@ -642,10 +642,10 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 
 /* Custom dropdown takes 50% */
 .row.mb-3 .custom-dropdown {
-  flex: 0 0 50%;
-  width: 50%;
-  min-width: 50%;
-  max-width: 50%;
+  flex: 0 0 59%;
+  width: 59%;
+  min-width: 59%;
+  max-width: 59%;
 }
 
 /* Buttons container takes 50% - 3 buttons equally distributed */
