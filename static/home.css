@@ -168,44 +168,220 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Image Preview - RESPONSIVE
+   Custom Dropdown Styling - MATCHES PAGE THEME
 ========================== */
+.custom-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.custom-dropdown .dropdown-header {
+  background-color: #f8fafc;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  padding: clamp(8px, 1.5vw, 10px) clamp(35px, 5vw, 40px) clamp(8px, 1.5vw, 10px) clamp(10px, 2vw, 12px);
+  cursor: pointer;
+  font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+  color: #212529;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: relative;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667eea' d='M10.293 3.293L6 7.586 1.707 3.293A1 1 0 00.293 4.707l5 5a1 1 0 001.414 0l5-5a1 1 0 10-1.414-1.414z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
+}
+
+.custom-dropdown .dropdown-header:hover {
+  border-color: #667eea;
+  background-color: #ffffff;
+}
+
+.custom-dropdown .dropdown-header:focus,
+.custom-dropdown .dropdown-header.active {
+  border-color: #667eea;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  outline: none;
+}
+
+.custom-dropdown .dropdown-arrow {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid #667eea;
+  transition: transform 0.3s ease;
+  pointer-events: none;
+}
+
+.custom-dropdown .dropdown-header.active .dropdown-arrow {
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.custom-dropdown .dropdown-menu-custom {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background-color: white;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  box-shadow: 0 10px 40px rgba(102, 126, 234, 0.2);
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  max-height: 300px;
+}
+
+.custom-dropdown .dropdown-menu-custom.active {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.custom-dropdown .search-box {
+  padding: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  background-color: #f8fafc;
+}
+
+.custom-dropdown .search-input {
+  width: 100%;
+  padding: 8px 12px 8px 35px;
+  border: 2px solid #e2e8f0;
+  border-radius: 6px;
+  font-size: clamp(0.8rem, 1.3vw, 0.85rem);
+  outline: none;
+  background-color: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23667eea' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cpath d='m21 21-4.35-4.35'%3E%3C/path%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: 10px center;
+  background-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.custom-dropdown .search-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.custom-dropdown .dropdown-list {
+  list-style: none;
+  margin: 20px;
+  padding: 0;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.custom-dropdown .dropdown-item-custom {
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+  color: #212529;
+  transition: all 0.3s ease;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.custom-dropdown .dropdown-item-custom:hover {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+  color: #667eea;
+}
+
+.custom-dropdown .dropdown-item-custom.selected {
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.15) 0%, rgba(118, 75, 162, 0.15) 100%);
+  color: #667eea;
+  font-weight: 600;
+}
+
+.custom-dropdown .checkmark {
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.custom-dropdown .dropdown-item-custom.selected .checkmark {
+  opacity: 1;
+}
+
+.custom-dropdown .checkmark svg {
+  fill: #667eea;
+}
+
+/* Scrollbar Styling for Dropdown */
+.custom-dropdown .dropdown-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-dropdown .dropdown-list::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.custom-dropdown .dropdown-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 4px;
+}
+
+.custom-dropdown .dropdown-list::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+}
+
+/* Hidden input to store the value */
+#updateRef {
+  display: none;
+}
+
+/* ==========================
+   Image Preview - RESPONSIVE - CORRECTED FOR 100% WIDTH
+========================== */
+.image-preview-container2 {
+  position: relative;
+  display: block;
+  width: 25%;
+  max-width: 25%;
+  margin-top: 10px;
+}
+
 .preview-image {
+  width: 100%;
   max-width: 100%;
-  width: clamp(200px, 40vw, 300px);
   height: auto;
   aspect-ratio: 1;
   object-fit: cover;
   border: 1px solid #ccc;
   display: block;
-  margin-top: 10px;
   border-radius: 6px;
 }
 
 .preview-image-dessin {
+  width: 100%;
   max-width: 100%;
-  width: clamp(100px, 20vw, 150px);
   height: auto;
   aspect-ratio: 3/2;
   border: 1px solid #ccc;
   border-radius: 6px;
-  margin-top: 10px;
   object-fit: contain;
   object-position: center;
   background-color: #f8f9fa;
-  display: inline-block;
-}
-
-.image-preview-container {
-  position: relative;
-  display: inline-block;
-  max-width: 100%;
+  display: block;
 }
 
 .delete-image-btn {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: 10px;
+  right: 10px;
   background: #dc3545;
   color: #fff;
   border: none;
@@ -349,12 +525,11 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Button Variants - SAME
+   Button Variants
 ========================== */
 .btn-primary {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
 }
 
 .btn-primary:hover {
@@ -365,7 +540,6 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 .btn-warning {
   background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
 }
 
 .btn-warning:hover {
@@ -376,7 +550,6 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 .btn-info {
   background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4);
 }
 
 .btn-info:hover {
@@ -387,7 +560,6 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 .btn-danger {
   background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
   color: #ffffff;
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
 }
 
 .btn-danger:hover {
@@ -420,7 +592,6 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 .btn-light {
   background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
   color: #374151;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   border: 2px solid #d1d5db;
 }
 
@@ -459,67 +630,35 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Reference Selection Row Layout - RESPONSIVE
+   INPUT GROUP SPECIFIC STYLING FOR THE CPID ROW - 50% dropdown + 50% buttons
 ========================== */
-.reference-selection-row {
-  display: flex;
-  gap: 15px;
-  align-items: stretch;
-  flex-wrap: wrap;
-  width: 100%;
-}
-
-.reference-selection-row .radio-container {
-  margin: 0;
-  flex-shrink: 0;
-}
-
-.reference-selection-row .input-group {
-  flex: 1;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  min-width: 280px;
-}
-
-.reference-selection-row .input-group .form-select {
-  flex: 1;
-  min-width: min(200px, 100%);
-}
-
-.reference-selection-row .input-group .btn {
-  flex-shrink: 0;
-  min-width: min(130px, 100%);
-  white-space: nowrap;
-}
-
-/* ==========================
-   Input Group Styling - RESPONSIVE
-========================== */
-.input-group {
+.row.mb-3 .input-group {
   display: flex;
   gap: 8px;
   align-items: stretch;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   width: 100%;
 }
 
-.input-group .form-select,
-.input-group .form-control {
-  flex: 1;
-  min-width: 150px;
+/* Custom dropdown takes 50% */
+.row.mb-3 .custom-dropdown {
+  flex: 0 0 50%;
+  width: 50%;
+  min-width: 50%;
+  max-width: 50%;
 }
 
-.input-group .btn {
-  flex-shrink: 0;
-  white-space: nowrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Buttons container takes 50% - 3 buttons equally distributed */
+.row.mb-3 .btn-warning,
+.row.mb-3 .btn-info,
+.row.mb-3 .btn-danger {
+  flex: 1 1 calc(16.67% - 6px); /* 50% / 3 = 16.67% minus some gap compensation */
+  min-width: 0;
+  width: auto;
 }
 
 /* ==========================
-   Form Validation - SAME
+   Form Validation
 ========================== */
 .form-control.is-invalid {
   border-color: #f56565;
@@ -537,7 +676,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Loading Overlay - SAME
+   Loading Overlay
 ========================== */
 .loading-overlay {
   position: fixed;
@@ -776,32 +915,37 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   }
 }
 
-/* Large Desktops (1200px to 1919px) */
+/* Large Desktops (1200px to 1919px) - KEEP IN SAME ROW */
 @media (min-width: 1200px) and (max-width: 1919px) {
   .container {
     max-width: 1200px;
   }
 }
 
-/* Medium Desktops and Tablets (992px to 1199px) */
+/* Medium Desktops and Tablets (992px to 1199px) - ADJUST BUTTONS */
 @media (min-width: 992px) and (max-width: 1199px) {
   .container {
     max-width: 960px;
     padding: 30px;
   }
 
-  .reference-selection-row {
+  .row.mb-3 .input-group {
     flex-wrap: wrap;
   }
 
-  .reference-selection-row .radio-container {
+  .row.mb-3 .custom-dropdown {
+    flex: 0 0 100%;
     width: 100%;
-    justify-content: center;
-    margin-bottom: 15px;
+    min-width: 100%;
+    max-width: 100%;
+    margin-bottom: 8px;
   }
 
-  .reference-selection-row .input-group {
-    width: 100%;
+  .row.mb-3 .btn-warning,
+  .row.mb-3 .btn-info,
+  .row.mb-3 .btn-danger {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 100px;
   }
 }
 
@@ -827,43 +971,23 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     padding: 10px 12px;
   }
 
-  .preview-image {
-    width: 250px;
-    height: 250px;
-  }
-
-  .reference-selection-row {
+  .row.mb-3 .input-group {
     flex-wrap: wrap;
   }
 
-  .reference-selection-row .radio-container {
+  .row.mb-3 .custom-dropdown {
+    flex: 0 0 100%;
     width: 100%;
-    justify-content: center;
-    margin-bottom: 15px;
-  }
-
-  .reference-selection-row .input-group {
-    width: 100%;
-    flex-wrap: wrap;
-  }
-
-  .reference-selection-row .input-group .form-select {
-    width: 100%;
-    min-width: unset;
+    min-width: 100%;
+    max-width: 100%;
     margin-bottom: 8px;
   }
 
-  .reference-selection-row .input-group .btn {
-    flex: 1;
-    min-width: calc(33.333% - 8px);
-  }
-
-  .input-group {
-    flex-wrap: wrap;
-  }
-
-  .input-group .btn {
-    min-width: calc(33.333% - 8px);
+  .row.mb-3 .btn-warning,
+  .row.mb-3 .btn-info,
+  .row.mb-3 .btn-danger {
+    flex: 1 1 calc(33.333% - 6px);
+    min-width: 100px;
   }
 
   .modal-overlay {
@@ -873,6 +997,14 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   .modal-overlay .modal {
     width: 85vw;
     max-width: 85vw;
+  }
+
+  .custom-dropdown .dropdown-header {
+    font-size: 0.9rem;
+  }
+
+  .custom-dropdown .dropdown-item-custom {
+    font-size: 0.9rem;
   }
 }
 
@@ -898,11 +1030,6 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     padding: 10px 12px;
   }
 
-  .preview-image {
-    width: 200px;
-    height: 200px;
-  }
-
   .radio-container {
     flex-direction: column;
     gap: 15px;
@@ -921,20 +1048,25 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     font-size: 0.85rem;
   }
 
-  .input-group {
+  /* CPID row specific adjustments */
+  .row.mb-3 .input-group {
     flex-direction: column;
     gap: 10px;
   }
 
-  .input-group .btn {
-    width: 100% !important;
-    min-width: unset;
+  .row.mb-3 .custom-dropdown {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
   }
 
-  .input-group .form-select,
-  .input-group .form-control {
+  .row.mb-3 .btn-warning,
+  .row.mb-3 .btn-info,
+  .row.mb-3 .btn-danger {
+    flex: 0 0 100%;
     width: 100%;
-    min-width: unset;
+    min-width: 100%;
   }
 
   .w-15,
@@ -942,19 +1074,6 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   .w-55,
   .w-25 {
     width: 100% !important;
-    min-width: unset;
-  }
-
-  .reference-selection-row {
-    flex-direction: column;
-  }
-
-  .reference-selection-row .input-group {
-    flex-direction: column;
-  }
-
-  .reference-selection-row .input-group .btn {
-    width: 100%;
     min-width: unset;
   }
 
@@ -973,6 +1092,20 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 
   .modal-overlay .modal-footer .btn {
     width: 100%;
+  }
+
+  .custom-dropdown .dropdown-header {
+    font-size: 0.85rem;
+    padding: 8px 35px 8px 10px;
+  }
+
+  .custom-dropdown .search-input {
+    font-size: 0.8rem;
+  }
+
+  .custom-dropdown .dropdown-item-custom {
+    font-size: 0.85rem;
+    padding: 8px 12px;
   }
 }
 
@@ -1010,15 +1143,11 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     padding: 8px 10px;
   }
 
-  .preview-image {
-    width: 100%;
-    max-width: 200px;
-    height: auto;
-  }
-
+  .preview-image,
   .preview-image-dessin {
     width: 100%;
-    max-width: 150px;
+    max-width: 100%;
+    height: auto;
   }
 
   .radio-container {
@@ -1041,20 +1170,25 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     min-height: 38px;
   }
 
-  .input-group {
+  /* CPID row specific adjustments */
+  .row.mb-3 .input-group {
     flex-direction: column;
     gap: 10px;
   }
 
-  .input-group .btn {
-    width: 100% !important;
-    min-width: unset;
+  .row.mb-3 .custom-dropdown {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
   }
 
-  .input-group .form-select,
-  .input-group .form-control {
+  .row.mb-3 .btn-warning,
+  .row.mb-3 .btn-info,
+  .row.mb-3 .btn-danger {
+    flex: 0 0 100%;
     width: 100%;
-    min-width: unset;
+    min-width: 100%;
   }
 
   .w-15,
@@ -1062,21 +1196,6 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   .w-55,
   .w-25 {
     width: 100% !important;
-    min-width: unset;
-  }
-
-  .reference-selection-row {
-    flex-direction: column;
-    gap: 12px;
-  }
-
-  .reference-selection-row .input-group {
-    flex-direction: column;
-    gap: 10px;
-  }
-
-  .reference-selection-row .input-group .btn {
-    width: 100%;
     min-width: unset;
   }
 
@@ -1118,6 +1237,20 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     padding: 6px 12px;
     font-size: 0.75rem;
   }
+
+  .custom-dropdown .dropdown-header {
+    font-size: 0.85rem;
+    padding: 8px 35px 8px 10px;
+  }
+
+  .custom-dropdown .search-input {
+    font-size: 0.8rem;
+  }
+
+  .custom-dropdown .dropdown-item-custom {
+    font-size: 0.85rem;
+    padding: 8px 12px;
+  }
 }
 
 /* Extra Small Mobile (below 400px) */
@@ -1156,6 +1289,20 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
     padding: 5px 10px;
     font-size: 0.7rem;
     margin-right: 8px;
+  }
+
+  .custom-dropdown .dropdown-header {
+    font-size: 0.8rem;
+    padding: 7px 32px 7px 9px;
+  }
+
+  .custom-dropdown .search-input {
+    font-size: 0.75rem;
+  }
+
+  .custom-dropdown .dropdown-item-custom {
+    font-size: 0.8rem;
+    padding: 7px 10px;
   }
 }
 

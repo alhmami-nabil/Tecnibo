@@ -106,12 +106,54 @@
     <div class="row mb-3">
       <div class="col">
         <div class="input-group">
-          <select id="updateRef" name="updateRef" class="form-select" form="mainForm">
+          <!-- Hidden select to maintain form structure -->
+          <select id="updateRef" name="updateRef" form="mainForm">
             <option value="">Sélectionner une CPID ({{ type_selected }})</option>
             {% for cpid in cpids %}
               <option value="{{ cpid }}">{{ cpid }}</option>
             {% endfor %}
           </select>
+
+          <!-- Custom searchable dropdown -->
+          <div class="custom-dropdown">
+            <div class="dropdown-header" id="dropdownHeader" tabindex="0">
+              <span id="selectedValue">Sélectionner une CPID ({{ type_selected }})</span>
+              <div class="dropdown-arrow"></div>
+            </div>
+
+            <div class="dropdown-menu-custom" id="dropdownMenu">
+              <div class="search-box">
+                <input
+                  type="text"
+                  class="search-input"
+                  placeholder="Rechercher..."
+                  id="searchInput"
+                >
+              </div>
+
+              <ul class="dropdown-list" id="dropdownList">
+                <li class="dropdown-item-custom selected" data-value="">
+                  <span>Sélectionner une CPID ({{ type_selected }})</span>
+                  <span class="checkmark">
+                    <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                    </svg>
+                  </span>
+                </li>
+                {% for cpid in cpids %}
+                <li class="dropdown-item-custom" data-value="{{ cpid }}">
+                  <span>{{ cpid }}</span>
+                  <span class="checkmark">
+                    <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                    </svg>
+                  </span>
+                </li>
+                {% endfor %}
+              </ul>
+            </div>
+          </div>
+
           <button type="submit" formaction="/update_fiche" form="mainForm" class="btn btn-warning">Mettre à jour</button>
           <button type="button" class="btn btn-info" onclick="GOficheTechnique()">Voir fiche</button>
           <button type="button" class="btn btn-danger" onclick="confirmDelete()">Supprimer</button>
@@ -152,7 +194,7 @@
       <input type="hidden" name="description_en" id="description_en">
       <input type="hidden" name="hauteur_en" id="hauteur_en">
       <input type="hidden" name="largeur_en" id="largeur_en">
-      <input type="hidden" name="epaisseur_nl" id="epaisseur_en">
+      <input type="hidden" name="epaisseur_en" id="epaisseur_en">
       <input type="hidden" name="tolerance_hauteur_en" id="tolerance_hauteur_en">
       <input type="hidden" name="battant_en" id="battant_en">
       <input type="hidden" name="poids_porte_cloison_en" id="poids_porte_cloison_en">
@@ -217,7 +259,7 @@
         <div class="col">
           <input type="file" class="form-control" name="photo_produit" accept="image/*" onchange="previewImage(this, 'photoPreview')">
           <input type="hidden" name="delete_photo_produit" id="delete_photo_produit" value="false">
-          <div class="image-preview-container mt-2">
+          <div class="image-preview-container2 mt-2">
             <img id="photoPreview" class="preview preview-image d-none" src="">
             <button type="button" class="delete-image-btn" onclick="markImageForDeletion('photo_produit', 'photoPreview')">×</button>
           </div>
@@ -400,6 +442,102 @@
   <!-- JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <script src="{{ url_for('static', filename='js/home.js') }}"></script>
+
+<script>
+  const dropdownHeader = document.getElementById('dropdownHeader');
+  const dropdownMenu = document.getElementById('dropdownMenu');
+  const dropdownList = document.getElementById('dropdownList');
+  const selectedValue = document.getElementById('selectedValue');
+  const searchInput = document.getElementById('searchInput');
+  const hiddenSelect = document.getElementById('updateRef');
+
+  // Toggle dropdown
+  dropdownHeader.addEventListener('click', () => {
+    dropdownHeader.classList.toggle('active');
+    dropdownMenu.classList.toggle('active');
+    if (dropdownMenu.classList.contains('active')) {
+      searchInput.focus();
+    }
+  });
+
+  // Keyboard navigation
+  dropdownHeader.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      dropdownHeader.click();
+    }
+  });
+
+  // Select item - triggers form population
+  dropdownList.addEventListener('click', (e) => {
+    const item = e.target.closest('.dropdown-item-custom');
+    if (item) {
+      // Remove selected class from all items
+      document.querySelectorAll('.dropdown-item-custom').forEach(i => {
+        i.classList.remove('selected');
+      });
+
+      // Add selected class to clicked item
+      item.classList.add('selected');
+
+      // Update header text
+      const itemText = item.querySelector('span').textContent;
+      selectedValue.textContent = itemText;
+
+      // Update hidden select value
+      hiddenSelect.value = item.dataset.value;
+
+      // Trigger the existing change event on the hidden select
+      // This will use your existing home.js logic to load the data
+      if (item.dataset.value) {
+        hiddenSelect.dispatchEvent(new Event('change'));
+      } else {
+        // Clear form if empty selection
+        clearForm();
+      }
+
+      // Close dropdown
+      dropdownHeader.classList.remove('active');
+      dropdownMenu.classList.remove('active');
+
+      // Clear search
+      searchInput.value = '';
+      document.querySelectorAll('.dropdown-item-custom').forEach(i => {
+        i.style.display = 'flex';
+      });
+    }
+  });
+
+  // Search functionality
+  searchInput.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('.dropdown-item-custom');
+
+    items.forEach(item => {
+      const text = item.querySelector('span').textContent.toLowerCase();
+      if (text.includes(searchTerm)) {
+        item.style.display = 'flex';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-dropdown')) {
+      dropdownHeader.classList.remove('active');
+      dropdownMenu.classList.remove('active');
+    }
+  });
+
+  // Prevent dropdown from closing when clicking inside the menu
+  dropdownMenu.addEventListener('click', (e) => {
+    if (e.target !== searchInput && !e.target.closest('.dropdown-item-custom')) {
+      e.stopPropagation();
+    }
+  });
+</script>
 
 </body>
 </html>

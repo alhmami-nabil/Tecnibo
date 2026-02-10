@@ -169,6 +169,7 @@ def home():
         (type_selected,)
     ).fetchall()]
     conn.close()
+    cpids = sorted(cpids, key=str.lower)
 
     if type_selected == "Cloison":
         return render_template("homeCloison.html", cpids=cpids, type_selected=type_selected, base=base)
