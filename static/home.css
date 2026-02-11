@@ -407,10 +407,16 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   transform: scale(1.1);
 }
 
-/* Show delete button when hovering over container */
-.image-preview-container:hover .delete-image-btn,
-.image-preview-container2:hover .delete-image-btn {
+/* Show delete button when hovering over the image */
+.preview:hover + .delete-image-btn {
   display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Keep button visible when hovering over the button itself */
+.delete-image-btn:hover {
+  display: flex !important;
   align-items: center;
   justify-content: center;
 }
