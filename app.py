@@ -159,22 +159,38 @@ def extract_translations(form_data, lang_suffix):
 @app.route("/", methods=["GET"])
 @app.route(f"{BASE_PATH}/", methods=["GET"])
 def home():
-    # Check if user is logged in
     type_selected = request.args.get("type", "Cloison")
+    cpid_selected = request.args.get("cpid", "").strip()   # strip spaces
     base = get_base_url()
 
     conn = get_db_connection()
-    cpids = [row['cpid'] for row in conn.execute(
+    # 1. Fetch all French CPIDs for this type
+    rows = conn.execute(
         "SELECT DISTINCT cpid FROM fiche_technique WHERE type=? AND langue='fr'",
         (type_selected,)
-    ).fetchall()]
+    ).fetchall()
+    cpids = [row['cpid'].strip() for row in rows]   # strip whitespace
+
+    # 2. If a CPID is requested and it is NOT already in the French list,
+    #    add it anyway (so it can be pre-selected)
+    if cpid_selected and cpid_selected not in cpids:
+        cpids.append(cpid_selected)
+
     conn.close()
     cpids = sorted(cpids, key=str.lower)
 
     if type_selected == "Cloison":
-        return render_template("homeCloison.html", cpids=cpids, type_selected=type_selected, base=base)
+        return render_template("homeCloison.html",
+                               cpids=cpids,
+                               type_selected=type_selected,
+                               base=base,
+                               cpid_selected=cpid_selected)
     else:
-        return render_template("homePorte.html", cpids=cpids, type_selected=type_selected, base=base)
+        return render_template("homePorte.html",
+                               cpids=cpids,
+                               type_selected=type_selected,
+                               base=base,
+                               cpid_selected=cpid_selected)
 
 
 # -------------------- ADD FICHE --------------------
@@ -309,7 +325,7 @@ def add_fiche():
     finally:
         conn.close()
 
-    return redirect(f"{base}/?type={ref_type}")
+    return redirect(f"{base}/?type={ref_type}&cpid={cpid}")
 
 
 # -------------------- GET FICHE --------------------
@@ -500,7 +516,7 @@ def update_fiche():
     finally:
         conn.close()
 
-    return redirect(f"{base}/?type={ref_type}")
+    return redirect(f"{base}/?type={ref_type}&cpid={cpid}")
 
 
 # -------------------- DELETE --------------------
@@ -673,13 +689,31 @@ def index():
     if not fiche:
         return "Référence introuvable", 404
 
-    # Route to appropriate template based on language
+    # Get the type from the fiche record
+    product_type = fiche.get('type') or fiche.get('Type')
+
+    # IMPORTANT: Pass both type and cpid to ALL templates
     if lang == "en":
-        return render_template("indexHaasEN.html", fiche=fiche, lang="en", base=base)
+        return render_template("indexHaasEN.html",
+                               fiche=fiche,
+                               lang="en",
+                               base=base,
+                               type=product_type,
+                               cpid=cpid)
     elif lang == "nl":
-        return render_template("indexHaasNL.html", fiche=fiche, lang="nl", base=base)
+        return render_template("indexHaasNL.html",
+                               fiche=fiche,
+                               lang="nl",
+                               base=base,
+                               type=product_type,
+                               cpid=cpid)
     else:
-        return render_template("indexHaas.html", fiche=fiche, lang="fr", base=base)
+        return render_template("indexHaas.html",
+                               fiche=fiche,
+                               lang="fr",
+                               base=base,
+                               type=product_type,
+                               cpid=cpid)
 
 
 # -------------------- RUN --------------------

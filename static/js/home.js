@@ -214,11 +214,31 @@ window.addEventListener('DOMContentLoaded', function() {
 
     // ===== AUTO-SELECT FROM URL =====
     const urlParams = new URLSearchParams(window.location.search);
-    const refFromUrl = urlParams.get('ref');
+    const cpidFromUrl = urlParams.get('cpid');
 
-    if (refFromUrl && updateRefSelect) {
-        console.log('🔗 Auto-selecting reference from URL:', refFromUrl);
-        updateRefSelect.value = refFromUrl;
+    if (cpidFromUrl && updateRefSelect) {
+        console.log('🔗 Auto-selecting CPID from URL:', cpidFromUrl);
+
+        // Update the hidden select
+        updateRefSelect.value = cpidFromUrl;
+
+        // Update the custom dropdown display
+        const selectedValue = document.getElementById('selectedValue');
+        if (selectedValue) {
+            selectedValue.textContent = cpidFromUrl;
+        }
+
+        // Update the visual selection in the dropdown list
+        const dropdownItems = document.querySelectorAll('.dropdown-item-custom');
+        dropdownItems.forEach(item => {
+            if (item.dataset.value === cpidFromUrl) {
+                item.classList.add('selected');
+            } else {
+                item.classList.remove('selected');
+            }
+        });
+
+        // Trigger the change event to load the data
         updateRefSelect.dispatchEvent(new Event('change'));
     }
 

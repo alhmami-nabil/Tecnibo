@@ -17,9 +17,11 @@
     <button type="button" onclick="window.location.href='?cpid={{ fiche.cpid }}&lang=en'">
         🇬🇧 English versie
     </button>
-    <button id="retourBtn" onclick="window.location.href='/'">
-        ← Terug naar de startpagina
-    </button>
+<button id="retourBtn" type="button"
+        data-type="{{ type }}"
+        data-cpid="{{ cpid }}">
+    ← Retour à l'accueil
+</button>
 </div>
 
 <!-- ==================== PAGE 1 ==================== -->
