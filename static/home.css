@@ -344,14 +344,16 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 }
 
 /* ==========================
-   Image Preview - RESPONSIVE - CORRECTED FOR 100% WIDTH
+   Image Preview - RESPONSIVE - FIXED DELETE BUTTON
 ========================== */
+.image-preview-container,
 .image-preview-container2 {
   position: relative;
-  display: block;
+  display: inline-block;
   width: 25%;
   max-width: 25%;
   margin-top: 10px;
+  min-height: 50px;
 }
 
 .preview-image {
@@ -380,36 +382,47 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 
 .delete-image-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: #dc3545;
-  color: #fff;
+  top: 5px;
+  right: 5px;
+  background-color: #dc3545;
+  color: white;
   border: none;
   border-radius: 50%;
-  width: clamp(25px, 5vw, 30px);
-  height: clamp(25px, 5vw, 30px);
+  width: 32px;
+  height: 32px;
+  font-size: 20px;
+  font-weight: bold;
   cursor: pointer;
-  font-size: clamp(14px, 2.5vw, 16px);
   display: none;
+  line-height: 32px;
+  padding: 0;
   z-index: 10;
+  transition: all 0.2s;
+  text-align: center;
   box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-  transition: all 0.3s ease;
 }
 
 .delete-image-btn:hover {
-  background: #c82333;
+  background-color: #c82333;
   transform: scale(1.1);
 }
 
-.image-preview-container:hover .delete-image-btn {
+/* Show delete button when hovering over container */
+.image-preview-container:hover .delete-image-btn,
+.image-preview-container2:hover .delete-image-btn {
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .preview.deleted {
-  opacity: 0.3;
+  opacity: 0.5 !important;
+  border: 3px solid red !important;
   filter: grayscale(100%);
+}
+
+.d-none {
+  display: none !important;
 }
 
 /* ==========================
