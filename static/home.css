@@ -240,7 +240,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   transform: translateY(-10px);
   transition: all 0.3s ease;
   z-index: 1000;
-  max-height: 300px;
+  max-height: 350px;
 }
 
 .custom-dropdown .dropdown-menu-custom.active {
@@ -279,7 +279,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   list-style: none;
   margin: 20px;
   padding: 0;
-  max-height: 200px;
+  max-height: 250px;
   overflow-y: auto;
 }
 
