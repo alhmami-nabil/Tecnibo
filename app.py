@@ -615,7 +615,7 @@ def save_annotations():
         "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Ubuntu/Debian
         "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",  # Arch/CentOS
         "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",  # Alternatives
-        os.path.join(app.root_path, "static/fonts/TECNIBO-DISPLAY.ttf")  # Bundled font (Best practice)
+        os.path.join(app.root_path, "static/fonts/TECNIBO-DISPLAY.otf")  # Bundled font (Best practice)
     ]
 
     for path in font_paths:
