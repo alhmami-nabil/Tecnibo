@@ -1,17 +1,7 @@
 /* ============================================
-   EDITOR MODAL STYLES - COMPLETE & RESPONSIVE
+   EDITOR MODAL STYLES
    ============================================ */
 
-/* ============================================
-   RESET & BASE STYLES
-   ============================================ */
-* {
-    box-sizing: border-box;
-}
-
-/* ============================================
-   MODAL OVERLAY
-   ============================================ */
 #editorModal {
     display: none;
     position: fixed;
@@ -20,261 +10,108 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.85);
-    backdrop-filter: blur(5px);
-    z-index: 200000;
+    z-index: 10000;
     justify-content: center;
     align-items: center;
     overflow: auto;
-    padding: 20px;
-    animation: fadeIn 0.3s ease-in-out;
 }
 
-#editorModal.active {
-    display: flex;
-}
-
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-    }
-    to {
-        opacity: 1;
-    }
-}
-
-/* ============================================
-   EDITOR CONTAINER
-   ============================================ */
 .editor-container {
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 24px;
-    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-    max-width: 800px;
-    width: 100%;
-    max-height: 95vh;
-    overflow-y: auto;
-    animation: slideUp 0.3s ease-out;
-    position: relative;
-}
-
-@keyframes slideUp {
-    from {
-        transform: translateY(30px);
-        opacity: 0;
-    }
-    to {
-        transform: translateY(0);
-        opacity: 1;
-    }
-}
-
-/* Custom Scrollbar */
-.editor-container::-webkit-scrollbar {
-    width: 8px;
-}
-
-.editor-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 10px;
-}
-
-.editor-container::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 10px;
-}
-
-.editor-container::-webkit-scrollbar-thumb:hover {
-    background: #555;
-}
-
-/* ============================================
-   INSTRUCTIONS SECTION
-   ============================================ */
-.editor-instructions {
-    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-    padding: 16px 20px;
+    background: white;
     border-radius: 8px;
-    margin-bottom: 20px;
-    font-size: 14px;
-    border-left: 5px solid #2196F3;
-    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    max-width: 750px;
+    width: 90%;
 }
 
-.editor-instructions strong {
-    display: block;
-    color: #1976D2;
-    font-size: 16px;
-    margin-bottom: 10px;
+.editor-instructions {
+    background: #e3f2fd;
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+    font-size: 14px;
+    border-left: 4px solid #2196F3;
 }
 
 .editor-instructions ul {
-    padding-left: 24px;
-    margin: 10px 0 0 0;
-    list-style-type: none;
+    padding-left: 20px;
+    margin-bottom: 0;
 }
 
 .editor-instructions li {
-    margin: 8px 0;
-    position: relative;
-    padding-left: 8px;
-    color: #424242;
-    line-height: 1.5;
+    margin: 3px 0;
 }
 
-.editor-instructions li::before {
-    content: "▸";
-    position: absolute;
-    left: -16px;
-    color: #2196F3;
-    font-weight: bold;
-}
-
-/* ============================================
-   TOOLBAR
-   ============================================ */
 .editor-toolbar {
     display: flex;
-    gap: 12px;
+    gap: 10px;
     align-items: center;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     flex-wrap: wrap;
-    padding: 12px;
-    background: #f8f9fa;
-    border-radius: 8px;
 }
 
 .editor-toolbar button {
-    padding: 10px 20px;
+    padding: 8px 16px;
     border: none;
-    border-radius: 6px;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 14px;
     font-weight: 600;
-    transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    white-space: nowrap;
-    position: relative;
-    overflow: hidden;
+    transition: all 0.3s ease;
 }
 
-.editor-toolbar button::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-.editor-toolbar button:active::before {
-    width: 300px;
-    height: 300px;
-}
-
-.editor-toolbar button:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    transform: none !important;
-}
-
-/* Save Button */
 .btn-save-editor {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    background: #4CAF50;
     color: white;
 }
 
-.btn-save-editor:hover:not(:disabled) {
-    background: linear-gradient(135deg, #45a049 0%, #3d8b40 100%);
+.btn-save-editor:hover {
+    background: #45a049;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
 }
 
-/* Clear Button */
 .btn-clear-editor {
-    background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+    background: #ff9800;
     color: white;
 }
 
-.btn-clear-editor:hover:not(:disabled) {
-    background: linear-gradient(135deg, #f57c00 0%, #e65100 100%);
+.btn-clear-editor:hover {
+    background: #e68900;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(255, 152, 0, 0.3);
 }
 
-/* Close Button */
 .btn-close-editor {
-    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    background: #f44336;
     color: white;
     margin-left: auto;
 }
 
-.btn-close-editor:hover:not(:disabled) {
-    background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+.btn-close-editor:hover {
+    background: #da190b;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
 }
 
-/* Status Text */
 #editorStatus {
     color: #2196F3;
     font-size: 14px;
-    font-weight: 600;
-    padding: 8px 12px;
-    background: white;
-    border-radius: 6px;
-    border: 2px solid #2196F3;
-    flex-shrink: 0;
 }
 
-/* ============================================
-   CANVAS
-   ============================================ */
 #editorCanvas {
-    border: 3px solid #e0e0e0;
-    border-radius: 8px;
+    border: 2px solid #ddd;
+    border-radius: 5px;
     cursor: crosshair;
     display: block;
     margin: 0 auto;
-    background: #ffffff;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    transition: border-color 0.3s ease, box-shadow 0.3s ease;
-    max-width: 100%;
-    height: auto;
+    background: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 #editorCanvas:hover {
     border-color: #2196F3;
-    box-shadow: 0 6px 16px rgba(33, 150, 243, 0.2);
 }
 
-#editorCanvas:active {
-    cursor: crosshair;
-}
-
-/* Canvas States */
-#editorCanvas.drawing {
-    cursor: crosshair;
-}
-
-#editorCanvas.moving {
-    cursor: move;
-}
-
-#editorCanvas.deleting {
-    cursor: not-allowed;
-}
-
-/* ============================================
-   LOADING OVERLAY
-   ============================================ */
+/* Loading Overlay */
 .loading-overlay {
     display: none;
     position: fixed;
@@ -283,12 +120,9 @@
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(3px);
     z-index: 9999;
     justify-content: center;
     align-items: center;
-    flex-direction: column;
-    gap: 20px;
 }
 
 .loading-overlay.active {
@@ -296,306 +130,37 @@
 }
 
 .spinner {
-    border: 5px solid #f3f3f3;
-    border-top: 5px solid #3498db;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
     border-radius: 50%;
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    height: 50px;
     animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
-.loading-text {
-    color: white;
-    font-size: 18px;
-    font-weight: 600;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-/* ============================================
-   RESPONSIVE DESIGN - TABLET
-   ============================================ */
-@media (max-width: 1024px) {
-    .editor-container {
-        max-width: 90%;
-        padding: 20px;
-    }
-
-    #editorCanvas {
-        max-width: 100%;
-    }
-
-    .editor-toolbar button {
-        font-size: 13px;
-        padding: 9px 18px;
-    }
-}
-
-/* ============================================
-   RESPONSIVE DESIGN - MOBILE
-   ============================================ */
+/* Responsive */
 @media (max-width: 768px) {
-    #editorModal {
-        padding: 10px;
-        align-items: flex-start;
-    }
-
     .editor-container {
-        width: 100%;
-        max-width: 100%;
-        padding: 16px;
-        margin: 10px 0;
-        border-radius: 10px;
-    }
-
-    .editor-instructions {
-        padding: 12px 16px;
-        font-size: 13px;
-    }
-
-    .editor-instructions strong {
-        font-size: 15px;
-        margin-bottom: 8px;
-    }
-
-    .editor-instructions li {
-        font-size: 13px;
-        margin: 6px 0;
-    }
-
-    .editor-toolbar {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 10px;
-        padding: 10px;
-    }
-
-    .editor-toolbar button {
-        width: 100%;
-        justify-content: center;
-        padding: 12px 16px;
-        font-size: 14px;
-    }
-
-    .btn-close-editor {
-        margin-left: 0;
-        order: 3;
-    }
-
-    .btn-save-editor {
-        order: 1;
-    }
-
-    .btn-clear-editor {
-        order: 2;
-    }
-
-    #editorStatus {
-        order: 0;
-        text-align: center;
-        width: 100%;
-        font-size: 13px;
+        width: 95%;
+        padding: 15px;
     }
 
     #editorCanvas {
         width: 100%;
         height: auto;
-        border-width: 2px;
-        touch-action: none;
-    }
-
-    .spinner {
-        width: 50px;
-        height: 50px;
-        border-width: 4px;
-    }
-
-    .loading-text {
-        font-size: 16px;
-    }
-}
-
-/* ============================================
-   RESPONSIVE DESIGN - SMALL MOBILE
-   ============================================ */
-@media (max-width: 480px) {
-    #editorModal {
-        padding: 5px;
-    }
-
-    .editor-container {
-        padding: 12px;
-        border-radius: 8px;
-    }
-
-    .editor-instructions {
-        padding: 10px 12px;
-        font-size: 12px;
-    }
-
-    .editor-instructions strong {
-        font-size: 14px;
-    }
-
-    .editor-instructions li {
-        font-size: 12px;
-        margin: 5px 0;
     }
 
     .editor-toolbar {
-        padding: 8px;
-        gap: 8px;
+        flex-direction: column;
+        align-items: stretch;
     }
 
-    .editor-toolbar button {
-        padding: 10px 14px;
-        font-size: 13px;
-    }
-
-    #editorStatus {
-        font-size: 12px;
-        padding: 6px 10px;
-    }
-
-    .spinner {
-        width: 40px;
-        height: 40px;
-        border-width: 3px;
-    }
-
-    .loading-text {
-        font-size: 14px;
-    }
-}
-
-/* ============================================
-   LANDSCAPE MOBILE
-   ============================================ */
-@media (max-width: 768px) and (orientation: landscape) {
-    #editorModal {
-        align-items: flex-start;
-    }
-
-    .editor-container {
-        max-height: 90vh;
-        margin: 10px auto;
-    }
-
-    .editor-toolbar {
-        flex-direction: row;
-        flex-wrap: wrap;
-    }
-
-    .editor-toolbar button {
-        width: auto;
-        flex: 1 1 auto;
-        min-width: 120px;
-    }
-
-    #editorStatus {
-        width: 100%;
-        order: -1;
-    }
-}
-
-/* ============================================
-   PRINT STYLES
-   ============================================ */
-@media print {
-    #editorModal,
-    .loading-overlay {
-        display: none !important;
-    }
-}
-
-/* ============================================
-   DARK MODE SUPPORT (OPTIONAL)
-   ============================================ */
-@media (prefers-color-scheme: dark) {
-    .editor-container {
-        background: #1e1e1e;
-        color: #e0e0e0;
-    }
-
-    .editor-instructions {
-        background: linear-gradient(135deg, #1a3a52 0%, #2d5a7b 100%);
-        border-left-color: #64b5f6;
-    }
-
-    .editor-instructions strong {
-        color: #64b5f6;
-    }
-
-    .editor-instructions li {
-        color: #e0e0e0;
-    }
-
-    .editor-toolbar {
-        background: #2a2a2a;
-    }
-
-    #editorCanvas {
-        background: #ffffff;
-        border-color: #424242;
-    }
-
-    #editorStatus {
-        background: #2a2a2a;
-        color: #64b5f6;
-        border-color: #64b5f6;
-    }
-
-    .editor-container::-webkit-scrollbar-track {
-        background: #2a2a2a;
-    }
-
-    .editor-container::-webkit-scrollbar-thumb {
-        background: #555;
-    }
-}
-
-/* ============================================
-   ACCESSIBILITY
-   ============================================ */
-/* Focus visible for keyboard navigation */
-.editor-toolbar button:focus-visible {
-    outline: 3px solid #2196F3;
-    outline-offset: 2px;
-}
-
-#editorCanvas:focus-visible {
-    outline: 3px solid #2196F3;
-    outline-offset: 2px;
-}
-
-/* Reduced motion */
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* High contrast mode */
-@media (prefers-contrast: high) {
-    .editor-container {
-        border: 2px solid #000;
-    }
-
-    .editor-toolbar button {
-        border: 2px solid currentColor;
-    }
-
-    #editorCanvas {
-        border-width: 3px;
+    .btn-close-editor {
+        margin-left: 0;
     }
 }
