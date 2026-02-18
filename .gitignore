@@ -15,3 +15,6 @@ __pycache__/
 *.log
 *.tmp
 temp.ps
+
+# Uploads folder (do not push to server)
+static/uploads/

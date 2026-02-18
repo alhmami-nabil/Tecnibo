@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, url_for, jsonify, flash
 import sqlite3
 import os
+import shutil
 from functools import wraps
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageDraw, ImageFont
@@ -19,24 +20,20 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
 
 # Fields that should NOT be copied (text fields that need translation)
-# NOTE: 'reference' and 'reference_menu' are NOT NULL in DB, so they always copy from French
 TRANSLATABLE_FIELDS = {
     'variant', 'description',
     'hauteur', 'largeur', 'epaisseur', 'epaisseur_battent', 'tolerance_hauteur',
     'verre', 'battant', 'panneau', 'poids_porte_cloison', 'resistance_feu',
     'nbn_s_01_400', 'nbn_en_iso_717_1'
 }
-# Add vue_eclatee fields
 for i in range(1, 23):
     TRANSLATABLE_FIELDS.add(f'vue_eclatee_{i}')
-# Add dessin_technique_nom fields
 for i in range(1, 7):
     TRANSLATABLE_FIELDS.add(f'dessin_technique_nom_{i}')
 
 
 # -------------------- HELPER: Get Base Path --------------------
 def get_base_url():
-    """Returns base path for URL generation"""
     return BASE_PATH if BASE_PATH else ''
 
 
@@ -120,7 +117,6 @@ def get_db_connection():
 
 
 def calculate_vue_eclatee_count(data):
-    """Calculate how many vue_eclatee fields (1-22) are not null/empty"""
     count = 0
     for i in range(1, 23):
         field_name = f"vue_eclatee_{i}"
@@ -140,17 +136,41 @@ def save_file(file):
     return None
 
 
+def save_vue_eclatee(file):
+    """
+    Save the vue éclatée image AND a clean _original copy.
+    myimage.png  → saved normally (will be overwritten by annotations)
+    myimage_original.png → stays clean forever, used by the editor
+    Returns the path of the main file: uploads/myimage.png
+    """
+    if not file or not file.filename:
+        return None
+
+    filename = secure_filename(file.filename)
+    name, ext = os.path.splitext(filename)
+
+    main_path     = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    original_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{name}_original{ext}")
+
+    # Save the uploaded file
+    file.save(main_path)
+
+    # Copy immediately as the original (clean, no annotations)
+    shutil.copy2(main_path, original_path)
+
+    return f"uploads/{filename}"
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def extract_translations(form_data, lang_suffix):
-    """Extract translations from form data (fields ending with specified language suffix)"""
     translations = {}
     suffix = f"_{lang_suffix}"
     for key, value in form_data.items():
         if key.endswith(suffix):
-            original_key = key[:-len(suffix)]  # Remove language suffix
+            original_key = key[:-len(suffix)]
             translations[original_key] = value.strip() if value else None
     return translations
 
@@ -160,19 +180,16 @@ def extract_translations(form_data, lang_suffix):
 @app.route(f"{BASE_PATH}/", methods=["GET"])
 def home():
     type_selected = request.args.get("type", "Cloison")
-    cpid_selected = request.args.get("cpid", "").strip()   # strip spaces
+    cpid_selected = request.args.get("cpid", "").strip()
     base = get_base_url()
 
     conn = get_db_connection()
-    # 1. Fetch all French CPIDs for this type
     rows = conn.execute(
         "SELECT DISTINCT cpid FROM fiche_technique WHERE type=? AND langue='fr'",
         (type_selected,)
     ).fetchall()
-    cpids = [row['cpid'].strip() for row in rows]   # strip whitespace
+    cpids = [row['cpid'].strip() for row in rows]
 
-    # 2. If a CPID is requested and it is NOT already in the French list,
-    #    add it anyway (so it can be pre-selected)
     if cpid_selected and cpid_selected not in cpids:
         cpids.append(cpid_selected)
 
@@ -209,14 +226,12 @@ def add_fiche():
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
-    # Vérifier si le CPID existe déjà
     existing = conn.execute("SELECT * FROM fiche_technique WHERE cpid=?", (cpid,)).fetchall()
     if existing:
         flash("Cette CPID existe déjà. Utilisez 'Mettre à jour' pour la modifier.", "danger")
         conn.close()
         return redirect(f"{base}/?type={ref_type}")
 
-    # Récupérer les images de la référence précédente si spécifiée
     previous_images = {}
     if previous_ref:
         prev = conn.execute(
@@ -225,21 +240,18 @@ def add_fiche():
         if prev:
             previous_images = dict(prev)
 
-    # Préparer les données FR (base)
     data_fr = {}
     for key, value in request.form.items():
-        if key not in ["previous_ref", "updateRef", "deleteRef"] and not key.startswith("delete_") and not key.endswith(
+        if key not in ["previous_ref", "updateRef", "deleteRef", "vue_eclatee_already_saved"] and not key.startswith("delete_") and not key.endswith(
                 "_nl") and not key.endswith("_en"):
             data_fr[key] = value.strip() if value else None
 
     data_fr["type"] = ref_type
     data_fr["langue"] = "fr"
 
-    # Extraire les traductions EN et NL
     en_translations = extract_translations(request.form, "en")
     nl_translations = extract_translations(request.form, "nl")
 
-    # Gérer les fichiers uploadés (partagés entre FR, EN et NL)
     file_fields = [
         "photo_produit",
         "dessin_technique_1", "dessin_technique_2", "dessin_technique_3",
@@ -254,11 +266,19 @@ def add_fiche():
         else:
             data_fr[f] = previous_images.get(f)
 
-    # Gérer vue_eclatee_image
+    # ── Vue éclatée ──
+    # If the image was already uploaded+annotated via the editor,
+    # vue_eclatee_already_saved contains the filename — do NOT re-save,
+    # otherwise the annotated version would be overwritten with the raw file.
+    vue_already_saved = request.form.get("vue_eclatee_already_saved", "").strip()
     vue_file = request.files.get("vue_eclatee_image")
-    if vue_file and vue_file.filename.strip():
-        clean_name = secure_filename(vue_file.filename)
-        data_fr["vue_eclatee_image"] = f"uploads/{clean_name}"
+
+    if vue_already_saved:
+        # Image already on disk (uploaded by editor) — just store the path
+        data_fr["vue_eclatee_image"] = f"uploads/{vue_already_saved}"
+    elif vue_file and vue_file.filename.strip():
+        # Normal upload without editor — save file + create _original copy
+        data_fr["vue_eclatee_image"] = save_vue_eclatee(vue_file)
     else:
         old = previous_images.get("vue_eclatee_image")
         if old:
@@ -270,52 +290,33 @@ def add_fiche():
     data_fr["vue_eclatee_count"] = calculate_vue_eclatee_count(data_fr)
 
     try:
-        # Créer la version FR
         cols_fr = ", ".join(data_fr.keys())
         placeholders_fr = ", ".join(["?"] * len(data_fr))
-        values_fr = list(data_fr.values())
+        conn.execute(f"INSERT INTO fiche_technique ({cols_fr}) VALUES ({placeholders_fr})", list(data_fr.values()))
 
-        conn.execute(f"INSERT INTO fiche_technique ({cols_fr}) VALUES ({placeholders_fr})", values_fr)
-
-        # Créer la version EN
         data_en = data_fr.copy()
         data_en["langue"] = "en"
-
-        # Clear translatable fields first (don't copy French text)
         for field in TRANSLATABLE_FIELDS:
             if field in data_en:
                 data_en[field] = None
-
-        # Appliquer les traductions EN (only if provided)
         for key, value in en_translations.items():
             if key in data_en and value and value.strip():
                 data_en[key] = value
-
         cols_en = ", ".join(data_en.keys())
         placeholders_en = ", ".join(["?"] * len(data_en))
-        values_en = list(data_en.values())
+        conn.execute(f"INSERT INTO fiche_technique ({cols_en}) VALUES ({placeholders_en})", list(data_en.values()))
 
-        conn.execute(f"INSERT INTO fiche_technique ({cols_en}) VALUES ({placeholders_en})", values_en)
-
-        # Créer la version NL
         data_nl = data_fr.copy()
         data_nl["langue"] = "nl"
-
-        # Clear translatable fields first (don't copy French text)
         for field in TRANSLATABLE_FIELDS:
             if field in data_nl:
                 data_nl[field] = None
-
-        # Appliquer les traductions NL (only if provided)
         for key, value in nl_translations.items():
             if key in data_nl and value and value.strip():
                 data_nl[key] = value
-
         cols_nl = ", ".join(data_nl.keys())
         placeholders_nl = ", ".join(["?"] * len(data_nl))
-        values_nl = list(data_nl.values())
-
-        conn.execute(f"INSERT INTO fiche_technique ({cols_nl}) VALUES ({placeholders_nl})", values_nl)
+        conn.execute(f"INSERT INTO fiche_technique ({cols_nl}) VALUES ({placeholders_nl})", list(data_nl.values()))
 
         conn.commit()
         flash(f"CPID '{cpid}' ajoutée avec succès en FR, EN et NL !", "success")
@@ -335,18 +336,13 @@ def get_fiche(cpid):
     conn = get_db_connection()
 
     fr = conn.execute(
-        "SELECT * FROM fiche_technique WHERE cpid=? AND langue='fr'",
-        (cpid,)
+        "SELECT * FROM fiche_technique WHERE cpid=? AND langue='fr'", (cpid,)
     ).fetchone()
-
     en = conn.execute(
-        "SELECT * FROM fiche_technique WHERE cpid=? AND langue='en'",
-        (cpid,)
+        "SELECT * FROM fiche_technique WHERE cpid=? AND langue='en'", (cpid,)
     ).fetchone()
-
     nl = conn.execute(
-        "SELECT * FROM fiche_technique WHERE cpid=? AND langue='nl'",
-        (cpid,)
+        "SELECT * FROM fiche_technique WHERE cpid=? AND langue='nl'", (cpid,)
     ).fetchone()
 
     conn.close()
@@ -354,8 +350,21 @@ def get_fiche(cpid):
     if not fr:
         return jsonify({"error": "CPID introuvable"}), 404
 
+    fr_dict = dict(fr)
+
+    # Compute the original image path from the main path (no DB column needed)
+    # e.g. uploads/myimage.png → uploads/myimage_original.png
+    vue = fr_dict.get("vue_eclatee_image")
+    if vue:
+        name, ext = os.path.splitext(vue)
+        original_candidate = f"{name}_original{ext}"
+        original_disk = os.path.join(app.root_path, "static", original_candidate)
+        fr_dict["vue_eclatee_image_original"] = original_candidate if os.path.exists(original_disk) else vue
+    else:
+        fr_dict["vue_eclatee_image_original"] = None
+
     return jsonify({
-        "fr": dict(fr),
+        "fr": fr_dict,
         "en": dict(en) if en else None,
         "nl": dict(nl) if nl else None
     })
@@ -376,15 +385,12 @@ def update_fiche():
     conn = get_db_connection()
     conn.row_factory = sqlite3.Row
 
-    # Récupérer les versions FR, EN et NL existantes
     existing_fr = conn.execute(
         "SELECT * FROM fiche_technique WHERE cpid=? AND langue='fr'", (cpid,)
     ).fetchone()
-
     existing_en = conn.execute(
         "SELECT * FROM fiche_technique WHERE cpid=? AND langue='en'", (cpid,)
     ).fetchone()
-
     existing_nl = conn.execute(
         "SELECT * FROM fiche_technique WHERE cpid=? AND langue='nl'", (cpid,)
     ).fetchone()
@@ -394,20 +400,17 @@ def update_fiche():
         conn.close()
         return redirect(f"{base}/?type={ref_type}")
 
-    # Préparer les données FR
     data_fr = {}
     for k, v in request.form.items():
-        if k not in ["updateRef", "deleteRef", "previous_ref"] and not k.startswith("delete_") and not k.endswith(
+        if k not in ["updateRef", "deleteRef", "previous_ref", "vue_eclatee_already_saved"] and not k.startswith("delete_") and not k.endswith(
                 "_nl") and not k.endswith("_en"):
             data_fr[k] = v
 
     data_fr["type"] = ref_type
 
-    # Extraire les traductions EN et NL
     en_translations = extract_translations(request.form, "en")
     nl_translations = extract_translations(request.form, "nl")
 
-    # Gérer les fichiers
     files = [
         "photo_produit",
         "dessin_technique_1", "dessin_technique_2", "dessin_technique_3",
@@ -420,93 +423,72 @@ def update_fiche():
             data_fr[f] = None
         else:
             uploaded = save_file(request.files.get(f))
-            if uploaded:
-                data_fr[f] = uploaded
-            else:
-                data_fr[f] = existing_fr[f]
+            data_fr[f] = uploaded if uploaded else existing_fr[f]
 
-    # Gérer vue_eclatee_image
-    delete_vue = request.form.get("delete_vue_eclatee_image")
-    vue_file = request.files.get("vue_eclatee_image")
+    # ── Vue éclatée ──
+    delete_vue        = request.form.get("delete_vue_eclatee_image")
+    vue_already_saved = request.form.get("vue_eclatee_already_saved", "").strip()
+    vue_file          = request.files.get("vue_eclatee_image")
 
     if delete_vue == "true":
+        # User explicitly deleted the image
         data_fr["vue_eclatee_image"] = None
+    elif vue_already_saved:
+        # Image was already uploaded+annotated via the editor — do NOT re-save
+        # otherwise the annotated version would be overwritten with the raw file
+        data_fr["vue_eclatee_image"] = f"uploads/{vue_already_saved}"
     elif vue_file and vue_file.filename.strip():
-        clean_name = secure_filename(vue_file.filename)
-        data_fr["vue_eclatee_image"] = f"uploads/{clean_name}"
+        # New image uploaded without editor — save file + create _original copy
+        data_fr["vue_eclatee_image"] = save_vue_eclatee(vue_file)
     else:
+        # No change — keep existing image
         old = existing_fr["vue_eclatee_image"]
-        if old:
-            clean_old = old.replace("uploads/", "")
-            data_fr["vue_eclatee_image"] = f"uploads/{clean_old}"
-        else:
-            data_fr["vue_eclatee_image"] = None
+        data_fr["vue_eclatee_image"] = f"uploads/{old.replace('uploads/', '')}" if old else None
 
     data_fr["vue_eclatee_count"] = calculate_vue_eclatee_count(data_fr)
 
     try:
-        # Mettre à jour la version FR
         set_clause_fr = ", ".join([f"{k}=?" for k in data_fr.keys()])
-        values_fr = list(data_fr.values()) + [cpid, "fr"]
-        conn.execute(f"UPDATE fiche_technique SET {set_clause_fr} WHERE cpid=? AND langue=?", values_fr)
+        conn.execute(f"UPDATE fiche_technique SET {set_clause_fr} WHERE cpid=? AND langue=?",
+                     list(data_fr.values()) + [cpid, "fr"])
 
-        # Préparer et mettre à jour la version EN
         data_en = data_fr.copy()
-
-        # Clear translatable fields first (don't copy French text)
         for field in TRANSLATABLE_FIELDS:
             if field in data_en:
                 data_en[field] = None
-
-        # Appliquer les traductions EN (only if provided)
         for key, value in en_translations.items():
             if key in data_en and value and value.strip():
                 data_en[key] = value
 
-        # Si la version EN n'existe pas, la créer
         if not existing_en:
             data_en["cpid"] = cpid
             data_en["langue"] = "en"
-
             cols_en = ", ".join(data_en.keys())
             placeholders_en = ", ".join(["?"] * len(data_en))
-            values_en = list(data_en.values())
-
-            conn.execute(f"INSERT INTO fiche_technique ({cols_en}) VALUES ({placeholders_en})", values_en)
+            conn.execute(f"INSERT INTO fiche_technique ({cols_en}) VALUES ({placeholders_en})", list(data_en.values()))
         else:
-            # Mettre à jour la version EN existante
             set_clause_en = ", ".join([f"{k}=?" for k in data_en.keys()])
-            values_en = list(data_en.values()) + [cpid, "en"]
-            conn.execute(f"UPDATE fiche_technique SET {set_clause_en} WHERE cpid=? AND langue=?", values_en)
+            conn.execute(f"UPDATE fiche_technique SET {set_clause_en} WHERE cpid=? AND langue=?",
+                         list(data_en.values()) + [cpid, "en"])
 
-        # Préparer et mettre à jour la version NL
         data_nl = data_fr.copy()
-
-        # Clear translatable fields first (don't copy French text)
         for field in TRANSLATABLE_FIELDS:
             if field in data_nl:
                 data_nl[field] = None
-
-        # Appliquer les traductions NL (only if provided)
         for key, value in nl_translations.items():
             if key in data_nl and value and value.strip():
                 data_nl[key] = value
 
-        # Si la version NL n'existe pas, la créer
         if not existing_nl:
             data_nl["cpid"] = cpid
             data_nl["langue"] = "nl"
-
             cols_nl = ", ".join(data_nl.keys())
             placeholders_nl = ", ".join(["?"] * len(data_nl))
-            values_nl = list(data_nl.values())
-
-            conn.execute(f"INSERT INTO fiche_technique ({cols_nl}) VALUES ({placeholders_nl})", values_nl)
+            conn.execute(f"INSERT INTO fiche_technique ({cols_nl}) VALUES ({placeholders_nl})", list(data_nl.values()))
         else:
-            # Mettre à jour la version NL existante
             set_clause_nl = ", ".join([f"{k}=?" for k in data_nl.keys()])
-            values_nl = list(data_nl.values()) + [cpid, "nl"]
-            conn.execute(f"UPDATE fiche_technique SET {set_clause_nl} WHERE cpid=? AND langue=?", values_nl)
+            conn.execute(f"UPDATE fiche_technique SET {set_clause_nl} WHERE cpid=? AND langue=?",
+                         list(data_nl.values()) + [cpid, "nl"])
 
         conn.commit()
         flash(f"CPID '{cpid}' mise à jour avec succès en FR, EN et NL !", "success")
@@ -533,7 +515,6 @@ def delete_fiche():
 
     try:
         conn = get_db_connection()
-        # Supprimer toutes les versions (FR, EN et NL)
         conn.execute("DELETE FROM fiche_technique WHERE cpid=?", (cpid,))
         conn.commit()
         conn.close()
@@ -562,12 +543,22 @@ def create_exploded_view():
         return jsonify({"error": "No image file provided"}), 400
 
     filename = secure_filename(file.filename)
-    file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    file.save(file_path)
+    name, ext = os.path.splitext(filename)
+
+    main_path     = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    original_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{name}_original{ext}")
+
+    # Save uploaded file
+    file.save(main_path)
+
+    # Always create _original copy here so it exists before any annotation
+    # This means add_fiche can skip re-saving and won't overwrite the annotated version
+    shutil.copy2(main_path, original_path)
 
     return jsonify({
         "success": "Image uploaded! Opening editor...",
-        "redirect": f"{base}/editor/{filename}"
+        "redirect": f"{base}/editor/{filename}",
+        "filename": filename
     })
 
 
@@ -578,20 +569,31 @@ def save_annotations():
     filename = data['filename']
     annotations = data['annotations']
 
-    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    # Always draw annotations ON TOP OF the original clean image,
+    # then save the result to the main (non-original) file.
+    # This ensures _original.png is NEVER touched after first upload.
+    name, ext = os.path.splitext(filename)
+    original_filename = f"{name}_original{ext}"
+    original_path = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
+    main_path     = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+    # Read from _original (clean) — NEVER from main file (already annotated)
+    # Load fully into memory then close file handle immediately so nothing gets overwritten
+    source_path = original_path if os.path.exists(original_path) else main_path
+
+    with Image.open(source_path) as raw:
+        source_img = raw.copy()   # fully loaded in memory, file handle released
 
     scale = 4
-    img = Image.open(image_path)
-
     width = 700
     height = 900
-
-    high_width = width * scale
+    high_width  = width  * scale
     high_height = height * scale
 
     output_img = Image.new("RGB", (high_width, high_height), "white")
-    bg = img.resize((high_width, high_height), Image.LANCZOS)
+    bg = source_img.resize((high_width, high_height), Image.LANCZOS)
     output_img.paste(bg, (0, 0))
+    source_img.close()
 
     draw = ImageDraw.Draw(output_img)
 
@@ -605,30 +607,23 @@ def save_annotations():
     big_circle_radius = 20 * scale
     big_circle = make_perfect_circle(big_circle_radius * 2)
 
-    # --- ROBUST FONT LOADING ---
     font_size = 20 * scale
     font = None
-
-    # List of possible font paths (Windows, Linux, and project-specific)
     font_paths = [
-        "arial.ttf",  # Local Windows
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",  # Ubuntu/Debian
-        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",  # Arch/CentOS
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",  # Alternatives
-        os.path.join(app.root_path, "static/fonts/TECNIBO-DISPLAY.otf")  # Bundled font (Best practice)
+        "arial.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
+        os.path.join(app.root_path, "static/fonts/TECNIBO-DISPLAY.otf")
     ]
-
     for path in font_paths:
         try:
             font = ImageFont.truetype(path, font_size)
-            break  # Exit loop once a font is successfully loaded
+            break
         except OSError:
             continue
-
     if font is None:
-        # Last resort fallback if no TTF files are found on the system
         font = ImageFont.load_default()
-    # ---------------------------
 
     start_line_pos = 50
     small_circle_radius = 3
@@ -638,34 +633,21 @@ def save_annotations():
         ann_x = int(ann['x'] * scale)
         ann_y = int(ann['y'] * scale)
 
-        # Draw the connection line
         draw.line([(line_start, ann_y), (ann_x, ann_y)], fill="black", width=scale)
 
-        # Draw the small dot at the point of interest
         small_r = small_circle_radius * scale
-        draw.ellipse([
-            ann_x - small_r, ann_y - small_r,
-            ann_x + small_r, ann_y + small_r
-        ], fill="black")
+        draw.ellipse([ann_x - small_r, ann_y - small_r, ann_x + small_r, ann_y + small_r], fill="black")
 
-        # Paste the pre-rendered smooth circle for the number bubble
-        output_img.paste(
-            big_circle,
-            (int(line_start - big_circle_radius), int(ann_y - big_circle_radius)),
-            big_circle
-        )
+        output_img.paste(big_circle,
+                         (int(line_start - big_circle_radius), int(ann_y - big_circle_radius)),
+                         big_circle)
 
-        # Draw the ID number inside the bubble
-        draw.text((line_start, ann_y), str(ann['id']),
-                  fill="white", anchor="mm", font=font)
+        draw.text((line_start, ann_y), str(ann['id']), fill="white", anchor="mm", font=font)
 
-    # Save with high DPI for print quality
-    output_img.save(image_path, dpi=(300, 300))
+    # Save annotated result to main file ONLY — _original is never overwritten
+    output_img.save(main_path, dpi=(300, 300))
 
-    return jsonify({
-        'success': True,
-        'image_path': f"uploads/{filename}"
-    })
+    return jsonify({'success': True, 'image_path': f"uploads/{filename}"})
 
 
 @app.route('/index')
@@ -679,8 +661,7 @@ def index():
     if cpid:
         conn = get_db_connection()
         row = conn.execute(
-            "SELECT * FROM fiche_technique WHERE cpid=? AND langue=?",
-            (cpid, lang)
+            "SELECT * FROM fiche_technique WHERE cpid=? AND langue=?", (cpid, lang)
         ).fetchone()
         conn.close()
         if row:
@@ -689,31 +670,14 @@ def index():
     if not fiche:
         return "Référence introuvable", 404
 
-    # Get the type from the fiche record
     product_type = fiche.get('type') or fiche.get('Type')
 
-    # IMPORTANT: Pass both type and cpid to ALL templates
     if lang == "en":
-        return render_template("indexHaasEN.html",
-                               fiche=fiche,
-                               lang="en",
-                               base=base,
-                               type=product_type,
-                               cpid=cpid)
+        return render_template("indexHaasEN.html", fiche=fiche, lang="en", base=base, type=product_type, cpid=cpid)
     elif lang == "nl":
-        return render_template("indexHaasNL.html",
-                               fiche=fiche,
-                               lang="nl",
-                               base=base,
-                               type=product_type,
-                               cpid=cpid)
+        return render_template("indexHaasNL.html", fiche=fiche, lang="nl", base=base, type=product_type, cpid=cpid)
     else:
-        return render_template("indexHaas.html",
-                               fiche=fiche,
-                               lang="fr",
-                               base=base,
-                               type=product_type,
-                               cpid=cpid)
+        return render_template("indexHaas.html", fiche=fiche, lang="fr", base=base, type=product_type, cpid=cpid)
 
 
 # -------------------- RUN --------------------

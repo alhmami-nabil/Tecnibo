@@ -219,7 +219,7 @@
         <div class="col">
           <label class="form-label">Référence</label>
           <div class="input-group">
-            <input type="text" class="form-control" name="reference" placeholder="Référence">
+            <input type="text" class="form-control" name="reference" placeholder="Référence" required>
             <button type="button" class="btn btn-outline-primary o_field_translate" data-field="reference">🌐 Traduire</button>
           </div>
         </div>
@@ -229,7 +229,7 @@
         <div class="col">
           <label for="reference_menu" class="form-label">Référence menu</label>
           <div class="input-group">
-            <input type="text" class="form-control" name="reference_menu" id="reference_menu" placeholder="Reference Menu">
+            <input type="text" class="form-control" name="reference_menu" id="reference_menu" placeholder="Reference Menu" required>
             <button type="button" class="btn btn-outline-primary o_field_translate" data-field="reference_menu">🌐 Traduire</button>
           </div>
         </div>
@@ -354,6 +354,7 @@
             <button type="button" class="btn btn-light w-30" id="btnEditImage">✏️ Éditer</button>
           </div>
           <input type="hidden" name="delete_vue_eclatee_image" id="delete_vue_eclatee_image" value="false">
+          <input type="hidden" name="vue_eclatee_already_saved" id="vue_eclatee_already_saved" value="">
           <div id="imgError" class="text-danger mt-1" style="display:none;">⚠ Image doit être exactement 700x900 pixels !</div>
         </div>
       </div>
