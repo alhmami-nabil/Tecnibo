@@ -346,7 +346,7 @@ function openEditorModal(imageSrc, existingAnnotations, onCleanup) {
     editorImage.onerror = function () {
         if (onCleanup) onCleanup();
         // modal was never opened → just show alert, nothing to close
-        alert("Impossible de charger l'image dans l'éditeur. Veuillez d'abord télécharger une image.");
+        alert("⚠️ Image introuvable sur le serveur. Veuillez re-uploader l\'image.");
     };
 
     editorImage.src = imageSrc;
