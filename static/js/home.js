@@ -9,140 +9,75 @@ let nextAnnotationId = 1;
 let isDragging = false;
 let draggedAnnotation = null;
 
-// Path of the currently loaded vue_eclatee_image (from DB)
 let currentVueEclateeImage = null;
 
-// ============================================
-// BASE PATH HELPER
-// ============================================
 const getBasePath = () => {
     return (typeof window !== 'undefined' && window.location.pathname.startsWith('/tools/fiches'))
-        ? '/tools/fiches'
-        : '';
+        ? '/tools/fiches' : '';
 };
 
-// ============================================
-// HELPER: Build _original path from main path
-// uploads/myimage.png  →  uploads/myimage_original.png
-// ============================================
-function buildOriginalPath(imagePath) {
-    if (!imagePath) return null;
-    const lastSlash = imagePath.lastIndexOf('/');
-    const folder    = imagePath.substring(0, lastSlash + 1);       // "uploads/"
-    const filename  = imagePath.substring(lastSlash + 1);          // "myimage.png"
-    const dotIndex  = filename.lastIndexOf('.');
-    if (dotIndex === -1) return imagePath + '_original';
-    const name = filename.substring(0, dotIndex);                  // "myimage"
-    const ext  = filename.substring(dotIndex);                     // ".png"
-    return `${folder}${name}_original${ext}`;                      // "uploads/myimage_original.png"
-}
-
-
-// ============================================
-// INITIALIZATION
-// ============================================
 window.addEventListener('DOMContentLoaded', function () {
     const base = getBasePath();
 
-    // ===== EDITOR BUTTON =====
     const btnEdit = document.getElementById('btnEditImage');
     if (btnEdit) {
         btnEdit.addEventListener('click', function (e) {
             e.preventDefault();
-
             const fileInput = document.getElementById('imageUpload');
-
-            // CASE 1: User just selected a NEW file → upload it and open editor
             if (fileInput && fileInput.files && fileInput.files[0]) {
                 _uploadAndOpenEditor(fileInput.files[0], base);
                 return;
             }
-
-            // CASE 2: Existing fiche is loaded → open the _original clean image
             if (currentVueEclateeImage) {
-                const originalPath = buildOriginalPath(currentVueEclateeImage);
-                const originalSrc  = '/static/' + originalPath;
-
-                // Editor will overwrite the main file (not the _original)
-                const parts = currentVueEclateeImage.split('/');
-                editorFilename = parts[parts.length - 1];
-
-                _openEditorFromURL(originalSrc, base);
+                _openEditorFromSVG(currentVueEclateeImage, base);
                 return;
             }
-
             alert('Veuillez d\'abord sélectionner ou charger une image 700×900 px');
         });
     }
 
-    // ===== REFERENCE DROPDOWN =====
     const updateRefSelect = document.getElementById("updateRef");
     if (updateRefSelect) {
         updateRefSelect.addEventListener("change", function () {
             const ref = this.value;
             if (!ref) { clearForm(); return; }
-
             const previousRefInput = document.getElementById("previous_ref");
             if (previousRefInput) previousRefInput.value = ref;
-
             const loadingOverlay = document.getElementById('loadingOverlay');
             if (loadingOverlay) loadingOverlay.classList.add('active');
-
             document.querySelectorAll('input[name^="delete_"]').forEach(i => i.value = "false");
             document.querySelectorAll('.preview').forEach(p => {
-                p.classList.remove('deleted');
-                p.style.border = '';
-                p.style.opacity = '1';
+                p.classList.remove('deleted'); p.style.border = ''; p.style.opacity = '1';
             });
-
             fetch(`${base}/get_fiche/${ref}`)
                 .then(r => r.json())
                 .then(data => {
                     if (loadingOverlay) loadingOverlay.classList.remove('active');
                     if (data.error) { alert('Erreur: ' + data.error); return; }
-
-                    const fr = data.fr || {};
-                    const en = data.en || {};
-                    const nl = data.nl || {};
-
-                    // Fill FR fields
+                    const fr = data.fr || {}, en = data.en || {}, nl = data.nl || {};
                     for (const [k, v] of Object.entries(fr)) {
                         if (k === 'id' || k === 'langue' || k === 'type') continue;
                         const input = document.querySelector(`[name="${k}"]`);
                         if (input && input.type !== "file") input.value = v || "";
                     }
-                    // Fill EN hidden fields
                     for (const [k, v] of Object.entries(en)) {
                         if (k === 'id' || k === 'langue' || k === 'type') continue;
                         const el = document.getElementById(k + "_en");
                         if (el) el.value = v || "";
                     }
-                    // Fill NL hidden fields
                     for (const [k, v] of Object.entries(nl)) {
                         if (k === 'id' || k === 'langue' || k === 'type') continue;
                         const el = document.getElementById(k + "_nl");
                         if (el) el.value = v || "";
                     }
-
-                    // Photo produit
                     _setImagePreview('photoPreview', fr.photo_produit);
-
-                    // Vue éclatée: preview shows the SAVED/ANNOTATED image
                     _setImagePreview('explodedPreview', fr.vue_eclatee_image);
-
-                    // Remember the main image path so editor can derive _original
                     currentVueEclateeImage = fr.vue_eclatee_image || null;
-
-                    // Enable/disable Edit button
                     const btn = document.getElementById('btnEditImage');
                     if (btn) {
                         btn.disabled = !currentVueEclateeImage;
-                        btn.title = currentVueEclateeImage
-                            ? 'Éditer l\'image originale (sans annotations)'
-                            : 'Aucune image à éditer';
+                        btn.title = currentVueEclateeImage ? 'Éditer les annotations' : 'Aucune image à éditer';
                     }
-
-                    // Technical drawings
                     for (let i = 1; i <= 6; i++) {
                         _setImagePreview('dessinPreview' + i, fr['dessin_technique_' + i]);
                     }
@@ -154,8 +89,7 @@ window.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ===== AUTO-SELECT FROM URL =====
-    const urlParams  = new URLSearchParams(window.location.search);
+    const urlParams = new URLSearchParams(window.location.search);
     const cpidFromUrl = urlParams.get('cpid');
     if (cpidFromUrl && updateRefSelect) {
         updateRefSelect.value = cpidFromUrl;
@@ -167,7 +101,6 @@ window.addEventListener('DOMContentLoaded', function () {
         updateRefSelect.dispatchEvent(new Event('change'));
     }
 
-    // ===== TYPE SWITCHING =====
     const typeCloison = document.getElementById('typeCloison');
     const typePorte   = document.getElementById('typePorte');
     if (typeCloison) typeCloison.addEventListener('change', function () {
@@ -178,49 +111,34 @@ window.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-
-// ============================================
-// INTERNAL: SET IMAGE PREVIEW
-// ============================================
 function _setImagePreview(previewId, imagePath) {
     const img = document.getElementById(previewId);
     if (!img) return;
     if (imagePath) {
         img.src = '/static/' + imagePath + '?t=' + Date.now();
         img.classList.remove('d-none', 'deleted');
-        img.style.border = '';
-        img.style.opacity = '1';
+        img.style.border = ''; img.style.opacity = '1';
     } else {
-        img.src = '';
-        img.classList.add('d-none');
+        img.src = ''; img.classList.add('d-none');
         img.classList.remove('deleted');
-        img.style.border = '';
-        img.style.opacity = '1';
+        img.style.border = ''; img.style.opacity = '1';
     }
 }
 
-
-// ============================================
-// INTERNAL: UPLOAD NEW FILE AND OPEN EDITOR
-// ============================================
 function _uploadAndOpenEditor(file, base) {
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) loadingOverlay.classList.add('active');
-
     const formData = new FormData();
     formData.append("vue_eclatee_image", file);
-
     fetch(`${base}/create_exploded_view`, { method: 'POST', body: formData })
         .then(r => r.json())
         .then(data => {
             if (loadingOverlay) loadingOverlay.classList.remove('active');
-            if (data.success && data.redirect) {
-                editorFilename = data.redirect.split('/').pop().split('?')[0];
-                // Pre-set the already_saved field with the filename.
-                // It will be confirmed/overwritten after saveEditorAnnotations succeeds.
+            if (data.success && data.filename) {
+                editorFilename = data.filename;
                 const alreadySavedInput = document.getElementById('vue_eclatee_already_saved');
                 if (alreadySavedInput) alreadySavedInput.value = editorFilename;
-                openEditorModal(file);
+                _loadSVGImageAndOpenEditor(editorFilename, [], base);
             } else {
                 alert('Erreur: ' + (data.error || 'Unknown error'));
             }
@@ -231,53 +149,50 @@ function _uploadAndOpenEditor(file, base) {
         });
 }
 
-
-// ============================================
-// INTERNAL: OPEN EDITOR FROM _original URL
-// ============================================
-function _openEditorFromURL(imgSrc, base) {
+function _openEditorFromSVG(svgPath, base) {
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) loadingOverlay.classList.add('active');
-
-    fetch(imgSrc)
-        .then(res => {
-            if (!res.ok) throw new Error(`Image not found: ${imgSrc}`);
-            return res.blob();
-        })
-        .then(blob => {
+    const parts = svgPath.split('/');
+    editorFilename = parts[parts.length - 1];
+    fetch(`${base}/get_svg_annotations/${svgPath}`)
+        .then(r => r.json())
+        .then(annData => {
+            const existingAnnotations = annData.annotations || [];
+            _loadSVGImageAndOpenEditor(editorFilename, existingAnnotations, base);
             if (loadingOverlay) loadingOverlay.classList.remove('active');
-
-            const objectUrl = URL.createObjectURL(blob);
-            const testImg   = new Image();
-
-            testImg.onload = function () {
-                if (testImg.width !== 700 || testImg.height !== 900) {
-                    URL.revokeObjectURL(objectUrl);
-                    alert(`L'image doit être 700×900 px (actuelle: ${testImg.width}×${testImg.height})`);
-                    return;
-                }
-                const file = new File([blob], editorFilename, { type: blob.type || 'image/png' });
-                openEditorModal(file);
-                URL.revokeObjectURL(objectUrl);
-            };
-            testImg.onerror = function () {
-                URL.revokeObjectURL(objectUrl);
-                alert('Impossible de charger l\'image originale.');
-            };
-            testImg.src = objectUrl;
         })
-        .catch(error => {
+        .catch(err => {
             if (loadingOverlay) loadingOverlay.classList.remove('active');
-            alert('Image originale introuvable.\n\n' +
-                  'Astuce: re-uploadez l\'image pour créer la copie originale.\n\n' +
-                  'Détail: ' + error.message);
+            alert('Erreur lors du chargement des annotations: ' + err.message);
         });
 }
 
+function _loadSVGImageAndOpenEditor(svgFilename, existingAnnotations, base) {
+    const svgUrl = `/static/uploads/${svgFilename}?t=${Date.now()}`;
+    fetch(svgUrl)
+        .then(r => r.text())
+        .then(svgText => {
+            const parser = new DOMParser();
+            const svgDoc = parser.parseFromString(svgText, 'image/svg+xml');
+            const imgEl  = svgDoc.getElementById('source-image');
+            if (!imgEl) {
+                const blob   = new Blob([svgText], { type: 'image/svg+xml' });
+                const objUrl = URL.createObjectURL(blob);
+                openEditorModal(objUrl, existingAnnotations, () => URL.revokeObjectURL(objUrl));
+                return;
+            }
+            const href = imgEl.getAttribute('href') || imgEl.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+            if (!href) {
+                alert('Impossible d\'extraire l\'image source du SVG.');
+                return;
+            }
+            openEditorModal(href, existingAnnotations, null);
+        })
+        .catch(err => {
+            alert('Erreur lors du chargement du SVG: ' + err.message);
+        });
+}
 
-// ============================================
-// CLEAR FORM
-// ============================================
 function clearForm() {
     document.querySelectorAll('input[type="text"], input[type="hidden"][name$="_nl"], input[type="hidden"][name$="_en"], textarea').forEach(input => {
         if (input.id !== 'updateRef' && input.name !== 'type') input.value = '';
@@ -290,7 +205,6 @@ function clearForm() {
     document.querySelectorAll('input[type="file"]').forEach(i => i.value = '');
     const prev = document.getElementById('previous_ref');
     if (prev) prev.value = '';
-
     currentVueEclateeImage = null;
     const alreadySavedInput = document.getElementById('vue_eclatee_already_saved');
     if (alreadySavedInput) alreadySavedInput.value = '';
@@ -298,10 +212,6 @@ function clearForm() {
     if (btn) { btn.disabled = true; btn.title = 'Aucune image à éditer'; }
 }
 
-
-// ============================================
-// IMAGE FUNCTIONS
-// ============================================
 function markImageForDeletion(fieldName, previewId) {
     if (!confirm('Êtes-vous sûr de vouloir supprimer cette image ?')) return;
     const del = document.getElementById(`delete_${fieldName}`);
@@ -314,10 +224,8 @@ function markImageForDeletion(fieldName, previewId) {
     }
     const fileInput = document.querySelector(`input[name="${fieldName}"]`);
     if (fileInput && fileInput.type === 'file') fileInput.value = '';
-
     if (fieldName === 'vue_eclatee_image') {
         currentVueEclateeImage = null;
-        // Also clear already_saved so a fresh upload won't be skipped
         const alreadySaved = document.getElementById('vue_eclatee_already_saved');
         if (alreadySaved) alreadySaved.value = '';
         const btn = document.getElementById('btnEditImage');
@@ -348,10 +256,8 @@ function handleImageUpload(input) {
     const errorDiv = document.getElementById('imgError');
     const preview  = document.getElementById('explodedPreview');
     const btn      = document.getElementById('btnEditImage');
-
     if (!file) { if (errorDiv) errorDiv.style.display = "none"; return; }
-
-    const img    = new Image();
+    const img = new Image();
     const reader = new FileReader();
     reader.onload = function (e) {
         img.src = e.target.result;
@@ -372,7 +278,6 @@ function handleImageUpload(input) {
                 if (btn) { btn.disabled = false; btn.title = 'Éditer cette image'; }
                 const del = document.getElementById('delete_vue_eclatee_image');
                 if (del) del.value = "false";
-                // New file selected without editor — clear already_saved so server re-saves properly
                 currentVueEclateeImage = null;
                 const alreadySaved = document.getElementById('vue_eclatee_already_saved');
                 if (alreadySaved) alreadySaved.value = '';
@@ -408,28 +313,43 @@ function checkExactSize(input, previewId, errorId, index) {
     };
 }
 
-
 // ============================================
 // EDITOR MODAL
+// THE ONLY CHANGE vs your original:
+//   modal.style.display = 'flex'  moved INSIDE onload
+//   onerror only shows alert — modal was never opened so nothing to close
 // ============================================
-function openEditorModal(file) {
+function openEditorModal(imageSrc, existingAnnotations, onCleanup) {
     const modal = document.getElementById('editorModal');
     if (!modal) return;
-    modal.style.display = 'flex';
+    // DO NOT open modal here — wait for image to load first
 
     editorCanvas = document.getElementById('editorCanvas');
     if (!editorCanvas) return;
     editorCtx = editorCanvas.getContext('2d');
-    editorAnnotations = [];
-    nextAnnotationId  = 1;
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        editorImage = new Image();
-        editorImage.onload = function () { drawEditor(); };
-        editorImage.src = e.target.result;
+    editorAnnotations = existingAnnotations ? existingAnnotations.slice() : [];
+    nextAnnotationId  = editorAnnotations.length
+        ? Math.max(...editorAnnotations.map(a => a.id)) + 1
+        : 1;
+
+    editorImage = new Image();
+
+    editorImage.onload = function () {
+        modal.style.display = 'flex';   // ← open modal ONLY when image is ready
+        drawEditor();
+        if (onCleanup) onCleanup();
+        const s = document.getElementById('editorStatus');
+        if (s) s.textContent = `${editorAnnotations.length} annotation(s)`;
     };
-    reader.readAsDataURL(file);
+
+    editorImage.onerror = function () {
+        if (onCleanup) onCleanup();
+        // modal was never opened → just show alert, nothing to close
+        alert('Impossible de charger l\'image dans l\'éditeur.');
+    };
+
+    editorImage.src = imageSrc;
 
     editorCanvas.onclick       = handleEditorClick;
     editorCanvas.oncontextmenu = handleEditorRightClick;
@@ -452,7 +372,6 @@ function drawEditor() {
     if (!editorImage || !editorCtx) return;
     editorCtx.clearRect(0, 0, editorCanvas.width, editorCanvas.height);
     editorCtx.drawImage(editorImage, 0, 0, 700, 900);
-
     editorAnnotations.forEach(ann => {
         const lineStart = ann.side === 'left' ? 50 : 650;
         editorCtx.strokeStyle = 'black'; editorCtx.lineWidth = 2;
@@ -460,7 +379,7 @@ function drawEditor() {
         editorCtx.fillStyle = 'black';
         editorCtx.beginPath(); editorCtx.arc(ann.x, ann.y, 3, 0, Math.PI * 2); editorCtx.fill();
         editorCtx.beginPath(); editorCtx.arc(lineStart, ann.y, 20, 0, Math.PI * 2); editorCtx.fill();
-        editorCtx.fillStyle = 'white'; editorCtx.font = 'bold 20px Arial';
+        editorCtx.fillStyle = 'white'; editorCtx.font = 'bold 14px Arial';
         editorCtx.textAlign = 'center'; editorCtx.textBaseline = 'middle';
         editorCtx.fillText(ann.id, lineStart, ann.y);
     });
@@ -544,7 +463,6 @@ function saveEditorAnnotations() {
     const base = getBasePath();
     const s = document.getElementById('editorStatus');
     if (s) { s.textContent = '💾 Enregistrement...'; s.style.color = '#2196F3'; }
-
     fetch(`${base}/save_annotations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -554,22 +472,17 @@ function saveEditorAnnotations() {
         .then(data => {
             if (data.success) {
                 if (s) { s.textContent = '✔️ Enregistré!'; s.style.color = '#4CAF50'; }
-                // Refresh annotated preview
                 const preview = document.getElementById('explodedPreview');
                 if (preview) {
                     preview.src = '/static/' + data.image_path + '?t=' + Date.now();
                     preview.classList.remove('d-none', 'deleted');
                     preview.style.border = ''; preview.style.opacity = '1';
                 }
-                // Update current path so next editor open uses _original again
                 currentVueEclateeImage = data.image_path;
                 const btn = document.getElementById('btnEditImage');
-                if (btn) { btn.disabled = false; btn.title = 'Éditer l\'image originale (sans annotations)'; }
-
-                // Tell add_fiche that this image is already on disk — do NOT re-upload
+                if (btn) { btn.disabled = false; btn.title = 'Éditer les annotations'; }
                 const alreadySavedInput = document.getElementById('vue_eclatee_already_saved');
                 if (alreadySavedInput) alreadySavedInput.value = editorFilename;
-
                 setTimeout(() => closeEditor(), 800);
             } else {
                 alert('Erreur: ' + (data.error || 'Unknown error'));
@@ -585,10 +498,6 @@ function saveEditorAnnotations() {
         }, 2000));
 }
 
-
-// ============================================
-// NAVIGATION
-// ============================================
 function GOficheTechnique() {
     const cpid = document.getElementById("updateRef").value;
     const base = getBasePath();
@@ -612,10 +521,6 @@ function confirmDelete() {
     }
 }
 
-
-// ============================================
-// TRANSLATION MODAL
-// ============================================
 document.addEventListener('DOMContentLoaded', function () {
     const modalOverlay = document.getElementById('modalOverlay');
     const closeBtn     = document.getElementById('closeBtn');

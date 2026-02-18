@@ -2,9 +2,11 @@ from flask import Flask, render_template, request, redirect, session, url_for, j
 import sqlite3
 import os
 import shutil
+import base64
+import json
 from functools import wraps
 from werkzeug.utils import secure_filename
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -136,12 +138,12 @@ def save_file(file):
     return None
 
 
-def save_vue_eclatee(file):
+def save_vue_eclatee_as_svg(file):
     """
-    Save the vue éclatée image AND a clean _original copy.
-    myimage.png  → saved normally (will be overwritten by annotations)
-    myimage_original.png → stays clean forever, used by the editor
-    Returns the path of the main file: uploads/myimage.png
+    Save the uploaded image and create an SVG wrapper around it.
+    The SVG embeds the image as base64, with no annotation layer yet.
+    Returns the path to the .svg file: uploads/myimage.svg
+    Only ONE file is created — no _original copy needed.
     """
     if not file or not file.filename:
         return None
@@ -149,16 +151,37 @@ def save_vue_eclatee(file):
     filename = secure_filename(file.filename)
     name, ext = os.path.splitext(filename)
 
-    main_path     = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    original_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{name}_original{ext}")
+    # Save the raw image temporarily
+    raw_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    file.save(raw_path)
 
-    # Save the uploaded file
-    file.save(main_path)
+    # Read and base64-encode the image
+    with open(raw_path, 'rb') as f:
+        img_data = base64.b64encode(f.read()).decode('utf-8')
 
-    # Copy immediately as the original (clean, no annotations)
-    shutil.copy2(main_path, original_path)
+    mime = 'image/png' if ext.lower() == '.png' else 'image/jpeg'
 
-    return f"uploads/{filename}"
+    # Build SVG with embedded image and empty annotations group
+    svg_content = f'''<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="700" height="900" viewBox="0 0 700 900">
+  <!-- Embedded source image — never modified -->
+  <image id="source-image" x="0" y="0" width="700" height="900"
+         xlink:href="data:{mime};base64,{img_data}"
+         preserveAspectRatio="none"/>
+  <!-- Annotations layer — updated by editor -->
+  <g id="annotations"></g>
+</svg>'''
+
+    svg_filename = name + '.svg'
+    svg_path = os.path.join(app.config['UPLOAD_FOLDER'], svg_filename)
+    with open(svg_path, 'w', encoding='utf-8') as f:
+        f.write(svg_content)
+
+    # Remove the temporary raw image
+    os.remove(raw_path)
+
+    return f"uploads/{svg_filename}"
 
 
 def allowed_file(filename):
@@ -266,26 +289,20 @@ def add_fiche():
         else:
             data_fr[f] = previous_images.get(f)
 
-    # ── Vue éclatée ──
-    # If the image was already uploaded+annotated via the editor,
-    # vue_eclatee_already_saved contains the filename — do NOT re-save,
-    # otherwise the annotated version would be overwritten with the raw file.
+    # ── Vue éclatée (SVG-based) ──
+    # vue_eclatee_already_saved: set by editor after save_annotations — SVG already on disk
     vue_already_saved = request.form.get("vue_eclatee_already_saved", "").strip()
     vue_file = request.files.get("vue_eclatee_image")
 
     if vue_already_saved:
-        # Image already on disk (uploaded by editor) — just store the path
+        # SVG already created and annotated by editor — just store the path
         data_fr["vue_eclatee_image"] = f"uploads/{vue_already_saved}"
     elif vue_file and vue_file.filename.strip():
-        # Normal upload without editor — save file + create _original copy
-        data_fr["vue_eclatee_image"] = save_vue_eclatee(vue_file)
+        # New image uploaded without editor — wrap in SVG (no annotation yet)
+        data_fr["vue_eclatee_image"] = save_vue_eclatee_as_svg(vue_file)
     else:
         old = previous_images.get("vue_eclatee_image")
-        if old:
-            clean_old = old.replace("uploads/", "")
-            data_fr["vue_eclatee_image"] = f"uploads/{clean_old}"
-        else:
-            data_fr["vue_eclatee_image"] = None
+        data_fr["vue_eclatee_image"] = old if old else None
 
     data_fr["vue_eclatee_count"] = calculate_vue_eclatee_count(data_fr)
 
@@ -352,21 +369,171 @@ def get_fiche(cpid):
 
     fr_dict = dict(fr)
 
-    # Compute the original image path from the main path (no DB column needed)
-    # e.g. uploads/myimage.png → uploads/myimage_original.png
-    vue = fr_dict.get("vue_eclatee_image")
-    if vue:
-        name, ext = os.path.splitext(vue)
-        original_candidate = f"{name}_original{ext}"
-        original_disk = os.path.join(app.root_path, "static", original_candidate)
-        fr_dict["vue_eclatee_image_original"] = original_candidate if os.path.exists(original_disk) else vue
-    else:
-        fr_dict["vue_eclatee_image_original"] = None
-
     return jsonify({
         "fr": fr_dict,
         "en": dict(en) if en else None,
         "nl": dict(nl) if nl else None
+    })
+
+
+# -------------------- GET SVG ANNOTATIONS --------------------
+@app.route("/get_svg_annotations/<path:filename>")
+@app.route(f"{BASE_PATH}/get_svg_annotations/<path:filename>")
+def get_svg_annotations(filename):
+    """
+    Parse an existing SVG file and return its annotations as JSON.
+    This allows the editor to re-open a previously annotated SVG and
+    restore all annotation points for further editing — without any _original file.
+    """
+    svg_path = os.path.join(app.root_path, 'static', filename)
+    if not os.path.exists(svg_path):
+        return jsonify({"error": "SVG not found", "annotations": []}), 404
+
+    import xml.etree.ElementTree as ET
+    try:
+        tree = ET.parse(svg_path)
+        root = tree.getroot()
+        ns = {'svg': 'http://www.w3.org/2000/svg'}
+
+        annotations = []
+        ann_group = root.find('.//svg:g[@id="annotations"]', ns)
+        if ann_group is not None:
+            for ann_g in ann_group.findall('svg:g', ns):
+                ann_id  = ann_g.get('data-id')
+                ann_x   = ann_g.get('data-x')
+                ann_y   = ann_g.get('data-y')
+                ann_side = ann_g.get('data-side')
+                if ann_id and ann_x and ann_y and ann_side:
+                    annotations.append({
+                        'id':   int(ann_id),
+                        'x':    float(ann_x),
+                        'y':    float(ann_y),
+                        'side': ann_side
+                    })
+
+        return jsonify({"annotations": annotations})
+    except Exception as e:
+        return jsonify({"error": str(e), "annotations": []}), 500
+
+
+# -------------------- SAVE SVG ANNOTATIONS --------------------
+@app.route('/save_annotations', methods=['POST'])
+@app.route(f"{BASE_PATH}/save_annotations", methods=['POST'])
+def save_annotations():
+    """
+    Receive annotations JSON, open the existing SVG, replace its <g id="annotations">
+    layer with fresh SVG annotation elements. The embedded <image> (base64) is untouched.
+    Only ONE file exists — no _original copy needed.
+    """
+    data       = request.json
+    svg_filename = data['filename']   # e.g. "myimage.svg"
+    annotations  = data['annotations']
+
+    svg_path = os.path.join(app.config['UPLOAD_FOLDER'], svg_filename)
+    if not os.path.exists(svg_path):
+        return jsonify({'success': False, 'error': 'SVG file not found'}), 404
+
+    import xml.etree.ElementTree as ET
+    ET.register_namespace('', 'http://www.w3.org/2000/svg')
+    ET.register_namespace('xlink', 'http://www.w3.org/1999/xlink')
+
+    try:
+        tree = ET.parse(svg_path)
+        root = tree.getroot()
+        ns   = {'svg': 'http://www.w3.org/2000/svg'}
+
+        # Remove old annotations group
+        ann_group = root.find('.//svg:g[@id="annotations"]', ns)
+        if ann_group is not None:
+            root.remove(ann_group)
+
+        # Build new annotations group
+        new_group = ET.SubElement(root, '{http://www.w3.org/2000/svg}g')
+        new_group.set('id', 'annotations')
+
+        for ann in annotations:
+            x     = float(ann['x'])
+            y     = float(ann['y'])
+            side  = ann['side']
+            ann_id = int(ann['id'])
+            line_x = 50 if side == 'left' else 650
+
+            # Wrap each annotation in a <g> with data attributes for later parsing
+            g = ET.SubElement(new_group, '{http://www.w3.org/2000/svg}g')
+            g.set('data-id',   str(ann_id))
+            g.set('data-x',    str(x))
+            g.set('data-y',    str(y))
+            g.set('data-side', side)
+
+            # Line from circle to target point
+            line = ET.SubElement(g, '{http://www.w3.org/2000/svg}line')
+            line.set('x1', str(line_x))
+            line.set('y1', str(y))
+            line.set('x2', str(x))
+            line.set('y2', str(y))
+            line.set('stroke', 'black')
+            line.set('stroke-width', '2')
+
+            # Small dot at target
+            dot = ET.SubElement(g, '{http://www.w3.org/2000/svg}circle')
+            dot.set('cx', str(x))
+            dot.set('cy', str(y))
+            dot.set('r', '3')
+            dot.set('fill', 'black')
+
+            # Big circle at line start
+            big = ET.SubElement(g, '{http://www.w3.org/2000/svg}circle')
+            big.set('cx', str(line_x))
+            big.set('cy', str(y))
+            big.set('r', '20')
+            big.set('fill', 'black')
+
+            # Number text
+            text = ET.SubElement(g, '{http://www.w3.org/2000/svg}text')
+            text.set('x', str(line_x))
+            text.set('y', str(y))
+            text.set('text-anchor', 'middle')
+            text.set('dominant-baseline', 'central')
+            text.set('fill', 'white')
+            text.set('font-size', '14')
+            text.set('font-weight', 'bold')
+            text.set('font-family', 'Arial, sans-serif')
+            text.text = str(ann_id)
+
+        # Write back — preserve XML declaration
+        tree.write(svg_path, encoding='unicode', xml_declaration=True)
+
+        return jsonify({'success': True, 'image_path': f"uploads/{svg_filename}"})
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# -------------------- CREATE EXPLODED VIEW (SVG upload entry point) --------------------
+@app.route('/create_exploded_view', methods=['POST'])
+@app.route(f"{BASE_PATH}/create_exploded_view", methods=['POST'])
+def create_exploded_view():
+    """
+    Receive an uploaded image, wrap it in an SVG with an empty annotations layer,
+    and return the SVG filename so the editor can open it.
+    No _original copy is created — the SVG itself is the single source of truth.
+    """
+    file = request.files.get("vue_eclatee_image")
+    base = get_base_url()
+
+    if not file or file.filename == '':
+        return jsonify({"error": "No image file provided"}), 400
+
+    svg_path = save_vue_eclatee_as_svg(file)
+    if not svg_path:
+        return jsonify({"error": "Failed to create SVG"}), 500
+
+    svg_filename = svg_path.split('/')[-1]   # e.g. "myimage.svg"
+
+    return jsonify({
+        "success": "Image uploaded and converted to SVG! Opening editor...",
+        "redirect": f"{base}/editor/{svg_filename}",
+        "filename": svg_filename
     })
 
 
@@ -425,25 +592,22 @@ def update_fiche():
             uploaded = save_file(request.files.get(f))
             data_fr[f] = uploaded if uploaded else existing_fr[f]
 
-    # ── Vue éclatée ──
+    # ── Vue éclatée (SVG-based) ──
     delete_vue        = request.form.get("delete_vue_eclatee_image")
     vue_already_saved = request.form.get("vue_eclatee_already_saved", "").strip()
     vue_file          = request.files.get("vue_eclatee_image")
 
     if delete_vue == "true":
-        # User explicitly deleted the image
         data_fr["vue_eclatee_image"] = None
     elif vue_already_saved:
-        # Image was already uploaded+annotated via the editor — do NOT re-save
-        # otherwise the annotated version would be overwritten with the raw file
+        # SVG already annotated by editor
         data_fr["vue_eclatee_image"] = f"uploads/{vue_already_saved}"
     elif vue_file and vue_file.filename.strip():
-        # New image uploaded without editor — save file + create _original copy
-        data_fr["vue_eclatee_image"] = save_vue_eclatee(vue_file)
+        # New image uploaded without editor — wrap in SVG
+        data_fr["vue_eclatee_image"] = save_vue_eclatee_as_svg(vue_file)
     else:
-        # No change — keep existing image
         old = existing_fr["vue_eclatee_image"]
-        data_fr["vue_eclatee_image"] = f"uploads/{old.replace('uploads/', '')}" if old else None
+        data_fr["vue_eclatee_image"] = old if old else None
 
     data_fr["vue_eclatee_count"] = calculate_vue_eclatee_count(data_fr)
 
@@ -532,124 +696,7 @@ def remove_last_part(value):
     return "_".join(value.split("_")[:-1])
 
 
-# -------------------- CREATE EXPLODED VIEW --------------------
-@app.route('/create_exploded_view', methods=['POST'])
-@app.route(f"{BASE_PATH}/create_exploded_view", methods=['POST'])
-def create_exploded_view():
-    file = request.files.get("vue_eclatee_image")
-    base = get_base_url()
-
-    if not file or file.filename == '':
-        return jsonify({"error": "No image file provided"}), 400
-
-    filename = secure_filename(file.filename)
-    name, ext = os.path.splitext(filename)
-
-    main_path     = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    original_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{name}_original{ext}")
-
-    # Save uploaded file
-    file.save(main_path)
-
-    # Always create _original copy here so it exists before any annotation
-    # This means add_fiche can skip re-saving and won't overwrite the annotated version
-    shutil.copy2(main_path, original_path)
-
-    return jsonify({
-        "success": "Image uploaded! Opening editor...",
-        "redirect": f"{base}/editor/{filename}",
-        "filename": filename
-    })
-
-
-@app.route('/save_annotations', methods=['POST'])
-@app.route(f"{BASE_PATH}/save_annotations", methods=['POST'])
-def save_annotations():
-    data = request.json
-    filename = data['filename']
-    annotations = data['annotations']
-
-    # Always draw annotations ON TOP OF the original clean image,
-    # then save the result to the main (non-original) file.
-    # This ensures _original.png is NEVER touched after first upload.
-    name, ext = os.path.splitext(filename)
-    original_filename = f"{name}_original{ext}"
-    original_path = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
-    main_path     = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-
-    # Read from _original (clean) — NEVER from main file (already annotated)
-    # Load fully into memory then close file handle immediately so nothing gets overwritten
-    source_path = original_path if os.path.exists(original_path) else main_path
-
-    with Image.open(source_path) as raw:
-        source_img = raw.copy()   # fully loaded in memory, file handle released
-
-    scale = 4
-    width = 700
-    height = 900
-    high_width  = width  * scale
-    high_height = height * scale
-
-    output_img = Image.new("RGB", (high_width, high_height), "white")
-    bg = source_img.resize((high_width, high_height), Image.LANCZOS)
-    output_img.paste(bg, (0, 0))
-    source_img.close()
-
-    draw = ImageDraw.Draw(output_img)
-
-    def make_perfect_circle(size, upscale=8):
-        big = size * upscale
-        circle_img = Image.new("RGBA", (big, big), (0, 0, 0, 0))
-        circle_draw = ImageDraw.Draw(circle_img)
-        circle_draw.ellipse((0, 0, big - 1, big - 1), fill="black")
-        return circle_img.resize((size, size), Image.LANCZOS)
-
-    big_circle_radius = 20 * scale
-    big_circle = make_perfect_circle(big_circle_radius * 2)
-
-    font_size = 20 * scale
-    font = None
-    font_paths = [
-        "arial.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-        os.path.join(app.root_path, "static/fonts/TECNIBO-DISPLAY.otf")
-    ]
-    for path in font_paths:
-        try:
-            font = ImageFont.truetype(path, font_size)
-            break
-        except OSError:
-            continue
-    if font is None:
-        font = ImageFont.load_default()
-
-    start_line_pos = 50
-    small_circle_radius = 3
-
-    for ann in annotations:
-        line_start = (start_line_pos if ann['side'] == 'left' else width - start_line_pos) * scale
-        ann_x = int(ann['x'] * scale)
-        ann_y = int(ann['y'] * scale)
-
-        draw.line([(line_start, ann_y), (ann_x, ann_y)], fill="black", width=scale)
-
-        small_r = small_circle_radius * scale
-        draw.ellipse([ann_x - small_r, ann_y - small_r, ann_x + small_r, ann_y + small_r], fill="black")
-
-        output_img.paste(big_circle,
-                         (int(line_start - big_circle_radius), int(ann_y - big_circle_radius)),
-                         big_circle)
-
-        draw.text((line_start, ann_y), str(ann['id']), fill="white", anchor="mm", font=font)
-
-    # Save annotated result to main file ONLY — _original is never overwritten
-    output_img.save(main_path, dpi=(300, 300))
-
-    return jsonify({'success': True, 'image_path': f"uploads/{filename}"})
-
-
+# -------------------- INDEX (public fiche view) --------------------
 @app.route('/index')
 @app.route(f"{BASE_PATH}/index")
 def index():
