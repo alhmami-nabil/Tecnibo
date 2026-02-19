@@ -376,18 +376,67 @@ def get_fiche(cpid):
     })
 
 
-# -------------------- GET SVG ANNOTATIONS --------------------
+# -------------------- GET SOURCE IMAGE FROM SVG --------------------
+@app.route('/get_source_image/<filename>')
+@app.route(f"{BASE_PATH}/get_source_image/<filename>")
+def get_source_image(filename):
+    """
+    Extract the raw embedded image bytes from an SVG file and serve them directly.
+    If the file is not an SVG (e.g. old PNG record), return 404 so JS shows the alert.
+    """
+    safe_filename = secure_filename(filename)
+    svg_path = os.path.join(app.config['UPLOAD_FOLDER'], safe_filename)
+
+    # Must be an .svg file — old records stored .png/.jpg, reject cleanly
+    if not safe_filename.lower().endswith('.svg'):
+        return "Not an SVG file — please re-upload the image", 404
+
+    if not os.path.exists(svg_path):
+        return "SVG not found", 404
+
+    import xml.etree.ElementTree as ET
+    try:
+        tree = ET.parse(svg_path)
+        root = tree.getroot()
+
+        img_el = root.find('.//{http://www.w3.org/2000/svg}image[@id="source-image"]')
+        if img_el is None:
+            img_el = root.find('.//image[@id="source-image"]')
+
+        if img_el is None:
+            return "Source image element not found in SVG", 404
+
+        href = img_el.get('href') or img_el.get('{http://www.w3.org/1999/xlink}href')
+        if not href or not href.startswith('data:'):
+            return "No embedded data URI found", 404
+
+        header, b64data = href.split(',', 1)
+        mime = header.split(':')[1].split(';')[0]
+        raw_bytes = base64.b64decode(b64data)
+
+        from flask import Response
+        return Response(raw_bytes, mimetype=mime,
+                        headers={"Cache-Control": "no-cache"})
+
+    except Exception as e:
+        return f"Error extracting image: {e}", 500
+
+
+
 @app.route("/get_svg_annotations/<path:filename>")
 @app.route(f"{BASE_PATH}/get_svg_annotations/<path:filename>")
 def get_svg_annotations(filename):
     """
     Parse an existing SVG file and return its annotations as JSON.
-    This allows the editor to re-open a previously annotated SVG and
-    restore all annotation points for further editing — without any _original file.
+    If the file is not an SVG (old PNG/JPG record), return empty annotations cleanly.
     """
+    # Old records may store .png/.jpg — not parseable as SVG, return empty gracefully
+    if not filename.lower().endswith('.svg'):
+        return jsonify({"error": "Not an SVG file", "annotations": []}), 200
+
     svg_path = os.path.join(app.root_path, 'static', filename)
     if not os.path.exists(svg_path):
-        return jsonify({"error": "SVG not found", "annotations": []}), 404
+        return jsonify({"error": "SVG not found", "annotations": []}), 200
 
     import xml.etree.ElementTree as ET
     try:
@@ -399,9 +448,9 @@ def get_svg_annotations(filename):
         ann_group = root.find('.//svg:g[@id="annotations"]', ns)
         if ann_group is not None:
             for ann_g in ann_group.findall('svg:g', ns):
-                ann_id  = ann_g.get('data-id')
-                ann_x   = ann_g.get('data-x')
-                ann_y   = ann_g.get('data-y')
+                ann_id   = ann_g.get('data-id')
+                ann_x    = ann_g.get('data-x')
+                ann_y    = ann_g.get('data-y')
                 ann_side = ann_g.get('data-side')
                 if ann_id and ann_x and ann_y and ann_side:
                     annotations.append({
@@ -413,7 +462,7 @@ def get_svg_annotations(filename):
 
         return jsonify({"annotations": annotations})
     except Exception as e:
-        return jsonify({"error": str(e), "annotations": []}), 500
+        return jsonify({"error": str(e), "annotations": []}), 200
 
 
 # -------------------- SAVE SVG ANNOTATIONS --------------------
