@@ -72,6 +72,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     }
                     _setImagePreview('photoPreview', fr.photo_produit);
                     _setImagePreview('explodedPreview', fr.vue_eclatee_image);
+                    _setImagePreview('dessinPreviewVariant', fr.variant_image);
                     currentVueEclateeImage = fr.vue_eclatee_image || null;
                     const btn = document.getElementById('btnEditImage');
                     if (btn) {
@@ -295,8 +296,18 @@ function checkExactSize(input, previewId, errorId, index) {
     img.onload = function () {
         const preview  = document.getElementById(previewId);
         const errorMsg = document.getElementById(errorId);
-        const rw = index <= 5 ? 400 : 300;
-        const rh = index <= 5 ? 300 : 940;
+
+        let rw, rh;
+        if (index === 'variantes') {
+            rw = 300; rh = 200;
+        } else if (index === 'photo_produit') {
+                rw = 1000; rh = 700;
+        } else if (index <= 5) {
+            rw = 400; rh = 300;
+        } else {
+            rw = 300; rh = 940;
+        }
+
         if (img.width !== rw || img.height !== rh) {
             if (errorMsg) { errorMsg.classList.remove('d-none'); errorMsg.style.display = "block"; }
             if (preview)  { preview.classList.add("d-none"); preview.src = ""; }
@@ -568,3 +579,101 @@ document.addEventListener('DOMContentLoaded', function () {
         inputFR.value=inputEN.value=inputNL.value='';
     }
 });
+
+
+
+
+<!-- Searchable Dropdown Script (Load before other scripts) -->
+  const dropdownHeader = document.getElementById('dropdownHeader');
+  const dropdownMenu = document.getElementById('dropdownMenu');
+  const dropdownList = document.getElementById('dropdownList');
+  const selectedValue = document.getElementById('selectedValue');
+  const searchInput = document.getElementById('searchInput');
+  const hiddenSelect = document.getElementById('updateRef');
+
+  // Toggle dropdown
+  dropdownHeader.addEventListener('click', () => {
+    dropdownHeader.classList.toggle('active');
+    dropdownMenu.classList.toggle('active');
+    if (dropdownMenu.classList.contains('active')) {
+      searchInput.focus();
+    }
+  });
+
+  // Keyboard navigation
+  dropdownHeader.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      dropdownHeader.click();
+    }
+  });
+
+  // Select item - triggers form population
+  dropdownList.addEventListener('click', (e) => {
+    const item = e.target.closest('.dropdown-item-custom');
+    if (item) {
+      // Remove selected class from all items
+      document.querySelectorAll('.dropdown-item-custom').forEach(i => {
+        i.classList.remove('selected');
+      });
+
+      // Add selected class to clicked item
+      item.classList.add('selected');
+
+      // Update header text
+      const itemText = item.querySelector('span').textContent;
+      selectedValue.textContent = itemText;
+
+      // Update hidden select value
+      hiddenSelect.value = item.dataset.value;
+
+      // Trigger the existing change event on the hidden select
+      // This will use your existing home.js logic to load the data
+      if (item.dataset.value) {
+        hiddenSelect.dispatchEvent(new Event('change'));
+      } else {
+        // Clear form if empty selection
+        clearForm();
+      }
+
+      // Close dropdown
+      dropdownHeader.classList.remove('active');
+      dropdownMenu.classList.remove('active');
+
+      // Clear search
+      searchInput.value = '';
+      document.querySelectorAll('.dropdown-item-custom').forEach(i => {
+        i.style.display = 'flex';
+      });
+    }
+  });
+
+  // Search functionality
+  searchInput.addEventListener('input', (e) => {
+    const searchTerm = e.target.value.toLowerCase();
+    const items = document.querySelectorAll('.dropdown-item-custom');
+
+    items.forEach(item => {
+      const text = item.querySelector('span').textContent.toLowerCase();
+      if (text.includes(searchTerm)) {
+        item.style.display = 'flex';
+      } else {
+        item.style.display = 'none';
+      }
+    });
+  });
+
+  // Close dropdown when clicking outside
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.custom-dropdown')) {
+      dropdownHeader.classList.remove('active');
+      dropdownMenu.classList.remove('active');
+    }
+  });
+
+  // Prevent dropdown from closing when clicking inside the menu
+  dropdownMenu.addEventListener('click', (e) => {
+    if (e.target !== searchInput && !e.target.closest('.dropdown-item-custom')) {
+      e.stopPropagation();
+    }
+  });

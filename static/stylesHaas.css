@@ -65,7 +65,32 @@
 /* ==================== HEADER ==================== */
 header {
   height: 20mm;
-  padding: 13px 10px 20px 19px;
+  padding: 13px 19px 20px 19px;
+}
+
+/*
+  The HTML has:
+    <div class="d-flex mb-5">
+      <div class="logo">TECNIBO</div>
+      <div class="d-flex text-muted-header header-right">
+        <span class="FICHE" style="margin-right: 121px;">FICHE PRODUIT</span>
+        <span class="SECTION" style="margin-right: 56px;">CLOISON</span>
+        <span class="CPID">HAAS</span>
+      </div>
+    </div>
+
+  Fix: make the outer d-flex use space-between so logo goes left
+  and the nav group goes right. Override inline margin-right on spans
+  with gap on the inner flex container instead.
+*/
+
+/* Outer row: 2 equal halves — logo 50% left | nav 50% right */
+header .d-flex,
+header .d-flex.mb-5 {
+  display: flex !important;
+  align-items: center !important;
+  width: 100%;
+  margin-bottom: 0 !important;   /* cancel Bootstrap mb-5 */
 }
 
 .logo {
@@ -73,6 +98,9 @@ header {
   font-size: 20px;
   color: #000;
   letter-spacing: 1.7px;
+  /* Takes exactly 50% of the header row */
+  flex: 0 0 51%;
+  width: 51%;
 }
 
 .logo2 {
@@ -81,29 +109,37 @@ header {
   margin-top: -3px;
   color: #000;
   letter-spacing: 2px;
+  flex: 0 0 51%;
+  width: 51%;
 }
 
+/* Right 50%: nav group with space-between between the 3 items */
 .header-right {
-  display: flex;
-  margin-left: 267.3px;
+  flex: 0 0 49%;
+  width: 49%;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;   /* FICHE PRODUIT ←→ CLOISON ←→ HAAS */
   letter-spacing: 0.3px;
 }
 
 .header-right2 {
-  display: flex;
-  margin-left: 212px;
+  flex: 0 0 49%;
+  width: 49%;
+  display: flex !important;
+  align-items: center;
+  justify-content: space-between;
   letter-spacing: 0.3px;
 }
 
-.text-muted-header {
-  font-family: 'UniversalSans500', sans-serif;
-  font-size: 8px;
-  padding-top: 5px;
-  padding-bottom: 5px;
-  color: #000;
-  font-weight: bold;
+/* Cancel the inline margin-right values hard-coded in the HTML spans */
+.header-right span,
+.header-right2 span {
+  margin-right: 0 !important;
 }
 
+/* Nav text style — the wrapper div sits inside header-right */
+.text-muted-header,
 .text-muted-header2 {
   font-family: 'UniversalSans500', sans-serif;
   font-size: 8px;
@@ -111,6 +147,22 @@ header {
   padding-bottom: 5px;
   color: #000;
   font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* Individual nav span labels */
+.FICHE,
+.SECTION,
+.CPID {
+  font-family: 'UniversalSans500', sans-serif;
+  font-size: 8px;
+  font-weight: bold;
+  letter-spacing: 0.3px;
+  color: #000;
+  white-space: nowrap;
 }
 
 /* ==================== MAIN CONTENT ==================== */
@@ -123,14 +175,11 @@ main {
 .title {
   font-family: 'TecniboDisplay', sans-serif;
   font-size: 52px;
-  padding-top: 32px;
-  padding-bottom: 5px;
+  padding-top: 30px;
   color: #000;
   text-align: left;
   text-transform: uppercase;
 }
-
-
 
 .variant {
   color: #000;
@@ -140,14 +189,12 @@ main {
 
 .product-photo {
   width: 97%;
-  height: 315px;
+  height: 310px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  margin-bottom: 15px;
   color: #000;
-  font-size: 16px;
 }
 
 /* ==================== TABLE ROWS ==================== */
@@ -207,11 +254,11 @@ main {
 }
 
 .padding {
-  padding-top: 22px;
+  padding-top: 18px;
 }
 
 .padding-test {
-  padding-top: 21px;
+  padding-top: 5px;
   letter-spacing: 0.3px;
   line-height: 1.7;
 }
@@ -250,57 +297,6 @@ main {
 }
 
 /* ==================== PAGE 2 ==================== */
-.empty {
-  height: 50px;
-  margin: 0px 9.5px 0px 0px;
-  border-bottom: 1px solid rgba(0,0,0,0.4);
-}
-
-.DesFlec {
-  font-family: 'UniversalSans500', sans-serif;
-  padding-top: 6px;
-  font-size: 16px;
-}
-
-.Des-Flec {
-  margin-left: 0px;
-  padding-top: 4px;
-}
-
-.text-Des-Flec {
-  padding-bottom: 1px !important;
-}
-
-.text-desc-Des-Flec {
-  font-family: 'UniversalSans500', sans-serif;
-  font-size: 9px;
-  padding-top: 2px;
-  padding-bottom: 5px;
-  color: #000;
-  text-align: justify;
-  line-height: 1.4;
-  letter-spacing: 0.02px;
-}
-
-.padding-part1 {
-  padding-top: 17px;
-}
-
-.padding-premier {
-  padding-top: 80px;
-  margin: 0px 9.5px 0px 0px;
-  border-bottom: 1px solid rgba(0,0,0,0.4);
-}
-
-.Premier-page3 {
-  padding-top: 60px;
-}
-
-.padding-part2 {
-  padding-top: 19.5px;
-}
-
-/* ==================== PAGE 3 ==================== */
 .main1 {
   height: 164.5mm;
   margin: 0px 9.5px 0px 0px;
@@ -351,7 +347,7 @@ main {
   border-bottom: 1px solid rgba(0,0,0,0.4);
 }
 
-/* ==================== PAGE 4 - TECHNICAL DRAWINGS ==================== */
+/* ==================== PAGE 3 - TECHNICAL DRAWINGS ==================== */
 .main4 {
   height: 100%;
   margin: 0;
@@ -360,7 +356,6 @@ main {
   overflow: hidden;
 }
 
-/* Main row with two columns */
 .main4 > .row.table-row {
   display: flex;
   gap: 10px;
@@ -369,7 +364,6 @@ main {
   padding: 0;
 }
 
-/* Left column: Horizontal sections (68%) */
 .main4 .col-8 {
   width: 68%;
   display: flex;
@@ -378,7 +372,6 @@ main {
   box-sizing: border-box;
 }
 
-/* Right column: Vertical section (30%) */
 .main4 .col-4 {
   width: 30%;
   display: flex;
@@ -387,7 +380,6 @@ main {
   box-sizing: border-box;
 }
 
-/* Column headers */
 .DesFlecHV {
   font-family: 'UniversalSans500', sans-serif;
   font-weight: bold;
@@ -398,7 +390,6 @@ main {
   flex-shrink: 0;
 }
 
-/* Horizontal rows */
 .main4 .Horizontal1,
 .main4 .Horizontal2 {
   display: flex;
@@ -417,7 +408,6 @@ main {
   margin: 0;
 }
 
-/* Columns inside rows */
 .main4 .Horizontal1 .col-6,
 .main4 .Horizontal2 .col-6 {
   flex: 1;
@@ -429,7 +419,6 @@ main {
   min-width: 0;
 }
 
-/* Third row - centered column */
 .main4 .Horizontal3 .col-6 {
   flex: 0 0 48%;
   margin: 0;
@@ -440,7 +429,6 @@ main {
   min-width: 0;
 }
 
-/* W3.CSS container reset */
 .main4 .w3-container {
   padding: 0;
   margin: 0;
@@ -452,7 +440,6 @@ main {
   min-height: 0;
 }
 
-/* W3.CSS card styling */
 .main4 .w3-card-4 {
   width: 100%;
   height: 100%;
@@ -466,7 +453,6 @@ main {
   min-height: 0;
 }
 
-/* Card images container */
 .main4 .w3-card-4 > img {
   flex: 1;
   width: 100%;
@@ -476,7 +462,6 @@ main {
   padding: 10px;
 }
 
-/* Card text container */
 .main4 .w3-card-4 .w3-container {
   flex-shrink: 0;
   height: auto;
@@ -506,7 +491,6 @@ main {
   -webkit-box-orient: vertical;
 }
 
-/* Vertical section */
 .vertical {
   flex: 1;
   width: 100%;
@@ -528,7 +512,6 @@ main {
   display: block;
 }
 
-/* Override all Bootstrap defaults */
 .main4 .row {
   margin-left: 0;
   margin-right: 0;
@@ -549,9 +532,61 @@ main {
   padding-right: 0;
 }
 
-/* W3.CSS utilities */
 .w3-center {
   text-align: center;
+}
+
+/* ==================== VARIANT IMAGES ==================== */
+/* Style B — image top, text below centered */
+.variant-style-b {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  width: 100%;
+}
+
+.variant-style-b .variant-img {
+  width: 130px;
+  height: 90px;
+  object-fit: contain;
+}
+
+.variant-style-b .variant-label {
+  font-family: 'UniversalSans500', sans-serif;
+  font-size: 8px;
+  text-transform: uppercase;
+  color: #000 !important;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+  text-align: left;
+  margin-top: 5px;
+}
+
+/* Style C — text left, image right */
+.variant-style-c {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.variant-style-c .variant-img {
+  width: 130px;
+  height: 90px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.variant-style-c .variant-label {
+  font-family: 'UniversalSans500', sans-serif;
+  font-size: 8px;
+  text-transform: uppercase;
+  color: #000 !important;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+  text-align: center;
+  flex: 1;
 }
 
 /* ==================== PRINT STYLES ==================== */
@@ -575,7 +610,6 @@ main {
     page-break-after: always;
   }
 
-  /* Hide download buttons when printing */
   .Telecharger {
     display: none !important;
   }
@@ -584,7 +618,6 @@ main {
     height: 257mm !important;
   }
 
-  /* Ensure Page 4 fits properly */
   .main4 {
     height: 100% !important;
     overflow: hidden !important;
@@ -596,18 +629,29 @@ main {
     page-break-inside: avoid;
   }
 
-  /* Print only first 4 pages */
   .PageA4:nth-child(n+6) {
     display: none !important;
   }
 
-  /* Prevent a blank page at the end */
   .PageA4:nth-child(5) {
     page-break-after: auto !important;
   }
 
-  /* Ensure cards print properly */
   .main4 .w3-card-4 {
     page-break-inside: avoid;
+  }
+
+  .variant-bullet {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background-color: #000 !important;
+  }
+
+  .variant-top-line,
+  .variant-bottom-line,
+  .variant-line-h {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background-color: #333 !important;
   }
 }

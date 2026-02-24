@@ -17,9 +17,7 @@
     <button onclick="window.location.href='?cpid={{ fiche.cpid }}&lang=nl'">
         🇳🇱 Dutch version
     </button>
-<button id="retourBtn" type="button"
-        data-type="{{ type }}"
-        data-cpid="{{ cpid }}">
+<button id="retourBtn" type="button" data-type="{{ type }}" data-cpid="{{ cpid }}">
     ← Retour à l'accueil
 </button>
 </div>
@@ -31,8 +29,8 @@
     <div class="d-flex mb-5">
       <div class="logo">TECNIBO</div>
       <div class="d-flex text-muted-header header-right">
-        <span class="FICHE" style="margin-right: 121px;">PRODUCT DATA SHEET</span>
-        <span class="SECTION" style="margin-right: 40px;">
+        <span class="FICHE">PRODUCT DATA SHEET</span>
+        <span class="SECTION">
           {% if fiche.type|lower == 'cloison' %}
             PARTITION
           {% elif fiche.type|lower == 'porte' %}
@@ -83,7 +81,22 @@
         {{ fiche.description }}
       </div>
     </div>
-    <br>
+    <!-- Variant images display -->
+    {% if fiche.variant_image %}
+    <div class="row table-row gx-0">
+      <div class="col-6 text-muted"><span></span></div>
+      <div class="col-6">
+        <div class="variant-grid">
+          <div class="variant-item variant-style-b">
+            <img src="{{ url_for('static', filename=fiche.variant_image) }}" class="variant-img">
+            <div class="variant-label">{{ fiche.variant_name }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="padding"></div>
 
     <!-- DIMENSIONS DES ELEMENTS -->
     <div class="row table-row gx-0">
@@ -209,72 +222,14 @@
   </footer>
 </div>
 
-<!-- ==================== PAGE 2 ==================== -->
-<!--<div class="PageA4">-->
-<!--  <header>-->
-<!--    <div class="d-flex mb-5">-->
-<!--      <div class="logo2">TECNIBO</div>-->
-<!--      <div class="d-flex text-muted-header2 header-right2">-->
-<!--        <span class="FICHE" style="margin-right: 121px;">FICHE PRODUIT</span>-->
-<!--        <span class="SECTION" style="margin-right: 56px;">{{ fiche.type|upper }}</span>-->
-<!--        <span class="CPID">{{ fiche.reference|upper }}</span>-->
-<!--      </div>-->
-<!--    </div>-->
-<!--  </header>-->
-
-<!--  <main>-->
-<!--    <div class="Premier">-->
-<!--      <div class="empty"></div>-->
-<!--      <div class="NotEmpty">-->
-<!--        <div class="row table-row gx-0">-->
-<!--          <div class="col-6"><div class="DesFlec">DESIGN ET FLEXIBILITE</div></div>-->
-<!--          <div class="col-6">-->
-<!--            <div class="d-flex">-->
-<!--              <div class="Des-Flec">-->
-<!--                <div class="text-desc-Des-Flec dash">-->
-<!--                  {{ fiche.design_et_flexibilite }}-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            </div>-->
-<!--          </div>-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </div>-->
-
-<!--    <div class="Premier-page3">-->
-<!--      <div class="empty"></div>-->
-<!--      <div class="NotEmpty">-->
-<!--        <div class="row table-row gx-0">-->
-<!--          <div class="col-6"><div class="DesFlec">PERSONALISATION ET OPTIONS</div></div>-->
-<!--          <div class="col-6">-->
-<!--            <div class="d-flex">-->
-<!--              <div class="Des-Flec">-->
-<!--                <div class="text-desc-Des-Flec dash">-->
-<!--                  {{ fiche.personnalisation_options }}-->
-<!--                </div>-->
-<!--              </div>-->
-<!--            </div>-->
-<!--          </div>-->
-<!--        </div>-->
-<!--      </div>-->
-<!--    </div>-->
-<!--  </main>-->
-
-<!--  <footer class="footer">-->
-<!--    <div class="footer-content">-->
-<!--      <span class="numberPage">2</span>-->
-<!--    </div>-->
-<!--  </footer>-->
-<!--</div>-->
-
-<!-- ==================== PAGE 3 (Vue éclatée) ==================== -->
+<!-- ==================== PAGE 2 (Vue éclatée) ==================== -->
 <div class="PageA4">
   <header>
     <div class="d-flex mb-5">
       <div class="logo2">TECNIBO</div>
       <div class="d-flex text-muted-header2 header-right2">
-        <span class="FICHE" style="margin-right: 121px;">PRODUCT DATA SHEET</span>
-        <span class="SECTION" style="margin-right: 40px;">
+        <span class="FICHE">PRODUCT DATA SHEET</span>
+        <span class="SECTION">
           {% if fiche.type|lower == 'cloison' %}
             PARTITION
           {% elif fiche.type|lower == 'porte' %}
@@ -338,14 +293,14 @@
   </footer>
 </div>
 
-<!-- ==================== PAGE 4 (Dessins techniques) ==================== -->
+<!-- ==================== PAGE 3 (Dessins techniques) ==================== -->
 <div class="PageA4">
   <header>
     <div class="d-flex mb-5">
       <div class="logo2">TECNIBO</div>
       <div class="d-flex text-muted-header2 header-right2">
-        <span class="FICHE" style="margin-right: 121px;">PRODUCT DATA SHEET</span>
-        <span class="SECTION" style="margin-right: 40px;">
+        <span class="FICHE">PRODUCT DATA SHEET</span>
+        <span class="SECTION">
           {% if fiche.type|lower == 'cloison' %}
             PARTITION
           {% elif fiche.type|lower == 'porte' %}

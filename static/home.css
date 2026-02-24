@@ -903,7 +903,8 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 
 /* Ensure translate buttons are visible - RESPONSIVE */
 .o_field_translate {
-  margin-top: 5px;
+  margin-top: 0;           /* ← was 5px, causing misalignment */
+  align-self: stretch;     /* ← makes button same height as input */
   padding: clamp(5px, 1vw, 7px) clamp(12px, 2.5vw, 15px);
   background-color: #007bff;
   color: white;

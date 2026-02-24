@@ -23,7 +23,7 @@ BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
 
 # Fields that should NOT be copied (text fields that need translation)
 TRANSLATABLE_FIELDS = {
-    'variant', 'description',
+    'variant', 'description', 'variant_name',
     'hauteur', 'largeur', 'epaisseur', 'epaisseur_battent', 'tolerance_hauteur',
     'verre', 'battant', 'panneau', 'poids_porte_cloison', 'resistance_feu',
     'nbn_s_01_400', 'nbn_en_iso_717_1'
@@ -37,6 +37,30 @@ for i in range(1, 7):
 # -------------------- HELPER: Get Base Path --------------------
 def get_base_url():
     return BASE_PATH if BASE_PATH else ''
+
+
+def migrate_db():
+    """Add missing columns to existing database without losing data."""
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+
+    # Get existing columns
+    c.execute("PRAGMA table_info(fiche_technique)")
+    existing_columns = {row[1] for row in c.fetchall()}
+
+    # Define columns to add if missing: (column_name, column_definition)
+    columns_to_add = [
+        ("variant_image", "TEXT"),
+        ("variant_name", "TEXT"),
+    ]
+
+    for col_name, col_def in columns_to_add:
+        if col_name not in existing_columns:
+            print(f"[migrate_db] Adding column: {col_name}")
+            c.execute(f"ALTER TABLE fiche_technique ADD COLUMN {col_name} {col_def}")
+
+    conn.commit()
+    conn.close()
 
 
 # -------------------- DATABASE INIT --------------------
@@ -53,6 +77,8 @@ def init_db():
         langue TEXT DEFAULT 'fr',
 	    type TEXT,
         description TEXT,
+        variant_image TEXT,
+        variant_name TEXT,
         photo_produit TEXT,
         hauteur TEXT,
         largeur TEXT,
@@ -109,6 +135,7 @@ def init_db():
 
 
 init_db()
+migrate_db()
 
 
 # -------------------- HELPER --------------------
@@ -265,7 +292,8 @@ def add_fiche():
 
     data_fr = {}
     for key, value in request.form.items():
-        if key not in ["previous_ref", "updateRef", "deleteRef", "vue_eclatee_already_saved"] and not key.startswith("delete_") and not key.endswith(
+        if key not in ["previous_ref", "updateRef", "deleteRef", "vue_eclatee_already_saved"] and not key.startswith(
+                "delete_") and not key.endswith(
                 "_nl") and not key.endswith("_en"):
             data_fr[key] = value.strip() if value else None
 
@@ -276,7 +304,7 @@ def add_fiche():
     nl_translations = extract_translations(request.form, "nl")
 
     file_fields = [
-        "photo_produit",
+        "varinat_image","photo_produit",
         "dessin_technique_1", "dessin_technique_2", "dessin_technique_3",
         "dessin_technique_4", "dessin_technique_5", "dessin_technique_6"
     ]
@@ -422,7 +450,6 @@ def get_source_image(filename):
         return f"Error extracting image: {e}", 500
 
 
-
 @app.route("/get_svg_annotations/<path:filename>")
 @app.route(f"{BASE_PATH}/get_svg_annotations/<path:filename>")
 def get_svg_annotations(filename):
@@ -448,15 +475,15 @@ def get_svg_annotations(filename):
         ann_group = root.find('.//svg:g[@id="annotations"]', ns)
         if ann_group is not None:
             for ann_g in ann_group.findall('svg:g', ns):
-                ann_id   = ann_g.get('data-id')
-                ann_x    = ann_g.get('data-x')
-                ann_y    = ann_g.get('data-y')
+                ann_id = ann_g.get('data-id')
+                ann_x = ann_g.get('data-x')
+                ann_y = ann_g.get('data-y')
                 ann_side = ann_g.get('data-side')
                 if ann_id and ann_x and ann_y and ann_side:
                     annotations.append({
-                        'id':   int(ann_id),
-                        'x':    float(ann_x),
-                        'y':    float(ann_y),
+                        'id': int(ann_id),
+                        'x': float(ann_x),
+                        'y': float(ann_y),
                         'side': ann_side
                     })
 
@@ -474,9 +501,9 @@ def save_annotations():
     layer with fresh SVG annotation elements. The embedded <image> (base64) is untouched.
     Only ONE file exists — no _original copy needed.
     """
-    data       = request.json
-    svg_filename = data['filename']   # e.g. "myimage.svg"
-    annotations  = data['annotations']
+    data = request.json
+    svg_filename = data['filename']  # e.g. "myimage.svg"
+    annotations = data['annotations']
 
     svg_path = os.path.join(app.config['UPLOAD_FOLDER'], svg_filename)
     if not os.path.exists(svg_path):
@@ -489,7 +516,7 @@ def save_annotations():
     try:
         tree = ET.parse(svg_path)
         root = tree.getroot()
-        ns   = {'svg': 'http://www.w3.org/2000/svg'}
+        ns = {'svg': 'http://www.w3.org/2000/svg'}
 
         # Remove old annotations group
         ann_group = root.find('.//svg:g[@id="annotations"]', ns)
@@ -501,17 +528,17 @@ def save_annotations():
         new_group.set('id', 'annotations')
 
         for ann in annotations:
-            x     = float(ann['x'])
-            y     = float(ann['y'])
-            side  = ann['side']
+            x = float(ann['x'])
+            y = float(ann['y'])
+            side = ann['side']
             ann_id = int(ann['id'])
             line_x = 50 if side == 'left' else 650
 
             # Wrap each annotation in a <g> with data attributes for later parsing
             g = ET.SubElement(new_group, '{http://www.w3.org/2000/svg}g')
-            g.set('data-id',   str(ann_id))
-            g.set('data-x',    str(x))
-            g.set('data-y',    str(y))
+            g.set('data-id', str(ann_id))
+            g.set('data-x', str(x))
+            g.set('data-y', str(y))
             g.set('data-side', side)
 
             # Line from circle to target point
@@ -577,7 +604,7 @@ def create_exploded_view():
     if not svg_path:
         return jsonify({"error": "Failed to create SVG"}), 500
 
-    svg_filename = svg_path.split('/')[-1]   # e.g. "myimage.svg"
+    svg_filename = svg_path.split('/')[-1]  # e.g. "myimage.svg"
 
     return jsonify({
         "success": "Image uploaded and converted to SVG! Opening editor...",
@@ -618,7 +645,8 @@ def update_fiche():
 
     data_fr = {}
     for k, v in request.form.items():
-        if k not in ["updateRef", "deleteRef", "previous_ref", "vue_eclatee_already_saved"] and not k.startswith("delete_") and not k.endswith(
+        if k not in ["updateRef", "deleteRef", "previous_ref", "vue_eclatee_already_saved"] and not k.startswith(
+                "delete_") and not k.endswith(
                 "_nl") and not k.endswith("_en"):
             data_fr[k] = v
 
@@ -628,7 +656,7 @@ def update_fiche():
     nl_translations = extract_translations(request.form, "nl")
 
     files = [
-        "photo_produit",
+        "variant_image","photo_produit",
         "dessin_technique_1", "dessin_technique_2", "dessin_technique_3",
         "dessin_technique_4", "dessin_technique_5", "dessin_technique_6"
     ]
@@ -642,9 +670,9 @@ def update_fiche():
             data_fr[f] = uploaded if uploaded else existing_fr[f]
 
     # ── Vue éclatée (SVG-based) ──
-    delete_vue        = request.form.get("delete_vue_eclatee_image")
+    delete_vue = request.form.get("delete_vue_eclatee_image")
     vue_already_saved = request.form.get("vue_eclatee_already_saved", "").strip()
-    vue_file          = request.files.get("vue_eclatee_image")
+    vue_file = request.files.get("vue_eclatee_image")
 
     if delete_vue == "true":
         data_fr["vue_eclatee_image"] = None
