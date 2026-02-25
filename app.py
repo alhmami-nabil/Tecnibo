@@ -39,30 +39,6 @@ def get_base_url():
     return BASE_PATH if BASE_PATH else ''
 
 
-def migrate_db():
-    """Add missing columns to existing database without losing data."""
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-
-    # Get existing columns
-    c.execute("PRAGMA table_info(fiche_technique)")
-    existing_columns = {row[1] for row in c.fetchall()}
-
-    # Define columns to add if missing: (column_name, column_definition)
-    columns_to_add = [
-        ("variant_image", "TEXT"),
-        ("variant_name", "TEXT"),
-    ]
-
-    for col_name, col_def in columns_to_add:
-        if col_name not in existing_columns:
-            print(f"[migrate_db] Adding column: {col_name}")
-            c.execute(f"ALTER TABLE fiche_technique ADD COLUMN {col_name} {col_def}")
-
-    conn.commit()
-    conn.close()
-
-
 # -------------------- DATABASE INIT --------------------
 def init_db():
     conn = sqlite3.connect(DB_NAME)
@@ -135,7 +111,6 @@ def init_db():
 
 
 init_db()
-migrate_db()
 
 
 # -------------------- HELPER --------------------
@@ -294,7 +269,7 @@ def add_fiche():
     for key, value in request.form.items():
         if key not in ["previous_ref", "updateRef", "deleteRef", "vue_eclatee_already_saved"] and not key.startswith(
                 "delete_") and not key.endswith(
-                "_nl") and not key.endswith("_en"):
+            "_nl") and not key.endswith("_en"):
             data_fr[key] = value.strip() if value else None
 
     data_fr["type"] = ref_type
@@ -304,7 +279,7 @@ def add_fiche():
     nl_translations = extract_translations(request.form, "nl")
 
     file_fields = [
-        "varinat_image","photo_produit",
+        "varinat_image", "photo_produit",
         "dessin_technique_1", "dessin_technique_2", "dessin_technique_3",
         "dessin_technique_4", "dessin_technique_5", "dessin_technique_6"
     ]
@@ -647,7 +622,7 @@ def update_fiche():
     for k, v in request.form.items():
         if k not in ["updateRef", "deleteRef", "previous_ref", "vue_eclatee_already_saved"] and not k.startswith(
                 "delete_") and not k.endswith(
-                "_nl") and not k.endswith("_en"):
+            "_nl") and not k.endswith("_en"):
             data_fr[k] = v
 
     data_fr["type"] = ref_type
@@ -656,7 +631,7 @@ def update_fiche():
     nl_translations = extract_translations(request.form, "nl")
 
     files = [
-        "variant_image","photo_produit",
+        "variant_image", "photo_produit",
         "dessin_technique_1", "dessin_technique_2", "dessin_technique_3",
         "dessin_technique_4", "dessin_technique_5", "dessin_technique_6"
     ]
