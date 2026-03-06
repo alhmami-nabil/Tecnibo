@@ -3,10 +3,7 @@ import sqlite3
 import os
 import shutil
 import base64
-import json
-from functools import wraps
 from werkzeug.utils import secure_filename
-from PIL import Image
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -140,20 +137,28 @@ def save_file(file):
     return None
 
 
-def save_vue_eclatee_as_svg(file):
+def save_vue_eclatee_as_svg(file, cpid=None):
     """
     Save the uploaded image and create an SVG wrapper around it.
     The SVG embeds the image as base64, with no annotation layer yet.
-    Returns the path to the .svg file: uploads/myimage.svg
+    If cpid is provided, the SVG is saved as <cpid>.svg.
+    Otherwise falls back to the original filename.
+    Returns the path to the .svg file: uploads/<cpid>.svg
     Only ONE file is created — no _original copy needed.
     """
     if not file or not file.filename:
         return None
 
     filename = secure_filename(file.filename)
-    name, ext = os.path.splitext(filename)
+    _, ext = os.path.splitext(filename)
 
-    # Save the raw image temporarily
+    # Use CPID as the SVG filename if provided, otherwise use original name
+    if cpid:
+        name = secure_filename(cpid)
+    else:
+        name, _ = os.path.splitext(filename)
+
+    # Save the raw image temporarily using original filename
     raw_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     file.save(raw_path)
 
@@ -198,6 +203,52 @@ def extract_translations(form_data, lang_suffix):
             original_key = key[:-len(suffix)]
             translations[original_key] = value.strip() if value else None
     return translations
+
+
+def is_valid_svg_for_cpid(vue_already_saved, cpid):
+    """
+    Validate that the vue_eclatee_already_saved value actually belongs
+    to the given CPID. Returns True only if the filename matches
+    the expected <cpid>.svg pattern.
+    """
+    if not vue_already_saved or not cpid:
+        return False
+    expected_svg = secure_filename(cpid) + '.svg'
+    return vue_already_saved.strip() == expected_svg
+
+
+def copy_svg_for_new_cpid(existing_svg_path, new_cpid):
+    """
+    When creating a new CPID by copying from an existing one, if the existing
+    record has an SVG vue éclatée, copy that SVG file and rename it after the
+    new CPID so each record has its own independent SVG file.
+
+    existing_svg_path: relative path stored in DB, e.g. "uploads/A123456789.svg"
+    new_cpid: the CPID of the new record, e.g. "A987654321"
+
+    Returns the new relative path "uploads/<new_cpid>.svg", or the original path
+    if the source is not an SVG or does not exist (safe fallback).
+    """
+    if not existing_svg_path or not new_cpid:
+        return existing_svg_path
+
+    # Only handle SVG files — old PNG/JPG records are kept as-is
+    if not existing_svg_path.lower().endswith('.svg'):
+        return existing_svg_path
+
+    src_path = os.path.join('static', existing_svg_path)
+    if not os.path.exists(src_path):
+        return existing_svg_path
+
+    new_svg_filename = secure_filename(new_cpid) + '.svg'
+    dst_path = os.path.join(app.config['UPLOAD_FOLDER'], new_svg_filename)
+
+    try:
+        shutil.copy2(src_path, dst_path)
+        return f"uploads/{new_svg_filename}"
+    except Exception:
+        # If copy fails, fall back to referencing the original file
+        return existing_svg_path
 
 
 # -------------------- HOME --------------------
@@ -279,7 +330,7 @@ def add_fiche():
     nl_translations = extract_translations(request.form, "nl")
 
     file_fields = [
-        "varinat_image", "photo_produit",
+        "variant_image", "photo_produit",
         "dessin_technique_1", "dessin_technique_2", "dessin_technique_3",
         "dessin_technique_4", "dessin_technique_5", "dessin_technique_6"
     ]
@@ -294,18 +345,23 @@ def add_fiche():
 
     # ── Vue éclatée (SVG-based) ──
     # vue_eclatee_already_saved: set by editor after save_annotations — SVG already on disk
+    # SECURITY: only trust this value if it actually belongs to the current CPID
     vue_already_saved = request.form.get("vue_eclatee_already_saved", "").strip()
     vue_file = request.files.get("vue_eclatee_image")
 
-    if vue_already_saved:
-        # SVG already created and annotated by editor — just store the path
+    if vue_already_saved and is_valid_svg_for_cpid(vue_already_saved, cpid):
+        # SVG already created and annotated by editor for THIS CPID — store the path
         data_fr["vue_eclatee_image"] = f"uploads/{vue_already_saved}"
     elif vue_file and vue_file.filename.strip():
-        # New image uploaded without editor — wrap in SVG (no annotation yet)
-        data_fr["vue_eclatee_image"] = save_vue_eclatee_as_svg(vue_file)
+        # New image uploaded without editor — wrap in SVG named after CPID
+        data_fr["vue_eclatee_image"] = save_vue_eclatee_as_svg(vue_file, cpid=cpid)
     else:
+        # No new image and no valid saved SVG.
+        # If copying from a previous CPID (e.g. user loaded A123456789 then typed A987654321),
+        # the previous SVG is named after A123456789 — we must copy it and rename it
+        # to A987654321.svg so each CPID owns its own independent file.
         old = previous_images.get("vue_eclatee_image")
-        data_fr["vue_eclatee_image"] = old if old else None
+        data_fr["vue_eclatee_image"] = copy_svg_for_new_cpid(old, cpid) if old else None
 
     data_fr["vue_eclatee_count"] = calculate_vue_eclatee_count(data_fr)
 
@@ -477,7 +533,7 @@ def save_annotations():
     Only ONE file exists — no _original copy needed.
     """
     data = request.json
-    svg_filename = data['filename']  # e.g. "myimage.svg"
+    svg_filename = data['filename']  # e.g. "CPID-001.svg"
     annotations = data['annotations']
 
     svg_path = os.path.join(app.config['UPLOAD_FOLDER'], svg_filename)
@@ -565,26 +621,125 @@ def save_annotations():
 @app.route(f"{BASE_PATH}/create_exploded_view", methods=['POST'])
 def create_exploded_view():
     """
-    Receive an uploaded image, wrap it in an SVG with an empty annotations layer,
+    Receive an uploaded image, wrap it in an SVG named after the CPID,
     and return the SVG filename so the editor can open it.
     No _original copy is created — the SVG itself is the single source of truth.
     """
     file = request.files.get("vue_eclatee_image")
+    # Get CPID from form data to name the SVG file
+    cpid_name = request.form.get("cpid", "").strip()
     base = get_base_url()
 
     if not file or file.filename == '':
         return jsonify({"error": "No image file provided"}), 400
 
-    svg_path = save_vue_eclatee_as_svg(file)
+    svg_path = save_vue_eclatee_as_svg(file, cpid=cpid_name if cpid_name else None)
     if not svg_path:
         return jsonify({"error": "Failed to create SVG"}), 500
 
-    svg_filename = svg_path.split('/')[-1]  # e.g. "myimage.svg"
+    svg_filename = svg_path.split('/')[-1]  # e.g. "CPID-001.svg"
 
     return jsonify({
         "success": "Image uploaded and converted to SVG! Opening editor...",
         "redirect": f"{base}/editor/{svg_filename}",
         "filename": svg_filename
+    })
+
+
+
+# -------------------- CREATE EXPLODED VIEW WITH ANNOTATIONS (single-shot) --------------------
+@app.route('/create_exploded_view_with_annotations', methods=['POST'])
+@app.route(f"{BASE_PATH}/create_exploded_view_with_annotations", methods=['POST'])
+def create_exploded_view_with_annotations():
+    """
+    Receive an uploaded image AND annotations JSON in one request.
+    Creates the SVG with the annotations already embedded.
+    Called by the JS flush when a brand-new image was edited before form submit.
+    This is the lazy path: the image was never sent to the server during editing —
+    only now at form-submit time is the file uploaded and SVG created.
+    """
+    import json as _json
+    import xml.etree.ElementTree as ET
+
+    file = request.files.get("vue_eclatee_image")
+    cpid_name = request.form.get("cpid", "").strip()
+    annotations_raw = request.form.get("annotations", "[]")
+
+    if not file or file.filename == '':
+        return jsonify({"error": "No image file provided"}), 400
+
+    try:
+        annotations = _json.loads(annotations_raw)
+    except Exception:
+        annotations = []
+
+    # Step 1: create the base SVG (image embedded, empty annotations group)
+    svg_path = save_vue_eclatee_as_svg(file, cpid=cpid_name if cpid_name else None)
+    if not svg_path:
+        return jsonify({"error": "Failed to create SVG"}), 500
+
+    svg_filename = svg_path.split('/')[-1]
+    full_svg_path = os.path.join(app.config['UPLOAD_FOLDER'], svg_filename)
+
+    # Step 2: inject annotations into the SVG (same logic as save_annotations)
+    if annotations:
+        try:
+            ET.register_namespace('', 'http://www.w3.org/2000/svg')
+            ET.register_namespace('xlink', 'http://www.w3.org/1999/xlink')
+            tree = ET.parse(full_svg_path)
+            root = tree.getroot()
+            ns = {'svg': 'http://www.w3.org/2000/svg'}
+
+            ann_group = root.find('.//svg:g[@id="annotations"]', ns)
+            if ann_group is not None:
+                root.remove(ann_group)
+
+            new_group = ET.SubElement(root, '{http://www.w3.org/2000/svg}g')
+            new_group.set('id', 'annotations')
+
+            for ann in annotations:
+                x      = float(ann['x'])
+                y      = float(ann['y'])
+                side   = ann['side']
+                ann_id = int(ann['id'])
+                line_x = 50 if side == 'left' else 650
+
+                g = ET.SubElement(new_group, '{http://www.w3.org/2000/svg}g')
+                g.set('data-id', str(ann_id))
+                g.set('data-x', str(x))
+                g.set('data-y', str(y))
+                g.set('data-side', side)
+
+                line = ET.SubElement(g, '{http://www.w3.org/2000/svg}line')
+                line.set('x1', str(line_x)); line.set('y1', str(y))
+                line.set('x2', str(x));      line.set('y2', str(y))
+                line.set('stroke', 'black'); line.set('stroke-width', '2')
+
+                dot = ET.SubElement(g, '{http://www.w3.org/2000/svg}circle')
+                dot.set('cx', str(x)); dot.set('cy', str(y))
+                dot.set('r', '3'); dot.set('fill', 'black')
+
+                big = ET.SubElement(g, '{http://www.w3.org/2000/svg}circle')
+                big.set('cx', str(line_x)); big.set('cy', str(y))
+                big.set('r', '20'); big.set('fill', 'black')
+
+                text = ET.SubElement(g, '{http://www.w3.org/2000/svg}text')
+                text.set('x', str(line_x)); text.set('y', str(y))
+                text.set('text-anchor', 'middle')
+                text.set('dominant-baseline', 'central')
+                text.set('fill', 'white'); text.set('font-size', '14')
+                text.set('font-weight', 'bold')
+                text.set('font-family', 'Arial, sans-serif')
+                text.text = str(ann_id)
+
+            tree.write(full_svg_path, encoding='unicode', xml_declaration=True)
+        except Exception as e:
+            return jsonify({"error": f"Failed to write annotations: {e}"}), 500
+
+    return jsonify({
+        "success": True,
+        "filename": svg_filename,
+        "image_path": f"uploads/{svg_filename}"
     })
 
 
@@ -621,8 +776,7 @@ def update_fiche():
     data_fr = {}
     for k, v in request.form.items():
         if k not in ["updateRef", "deleteRef", "previous_ref", "vue_eclatee_already_saved"] and not k.startswith(
-                "delete_") and not k.endswith(
-            "_nl") and not k.endswith("_en"):
+                "delete_") and not k.endswith("_nl") and not k.endswith("_en"):
             data_fr[k] = v
 
     data_fr["type"] = ref_type
@@ -645,19 +799,23 @@ def update_fiche():
             data_fr[f] = uploaded if uploaded else existing_fr[f]
 
     # ── Vue éclatée (SVG-based) ──
+    # SECURITY FIX: validate vue_eclatee_already_saved belongs to THIS CPID
+    # to prevent stale editor sessions from overwriting the wrong record's image.
     delete_vue = request.form.get("delete_vue_eclatee_image")
     vue_already_saved = request.form.get("vue_eclatee_already_saved", "").strip()
     vue_file = request.files.get("vue_eclatee_image")
 
     if delete_vue == "true":
         data_fr["vue_eclatee_image"] = None
-    elif vue_already_saved:
-        # SVG already annotated by editor
+    elif vue_already_saved and is_valid_svg_for_cpid(vue_already_saved, cpid):
+        # SVG already annotated by editor AND belongs to this CPID — safe to use
         data_fr["vue_eclatee_image"] = f"uploads/{vue_already_saved}"
     elif vue_file and vue_file.filename.strip():
-        # New image uploaded without editor — wrap in SVG
-        data_fr["vue_eclatee_image"] = save_vue_eclatee_as_svg(vue_file)
+        # New image uploaded without editor — wrap in SVG named after CPID
+        data_fr["vue_eclatee_image"] = save_vue_eclatee_as_svg(vue_file, cpid=cpid)
     else:
+        # No new upload, no valid saved SVG (or stale SVG from different CPID)
+        # Keep the existing image stored in the database — do NOT use stale vue_already_saved
         old = existing_fr["vue_eclatee_image"]
         data_fr["vue_eclatee_image"] = old if old else None
 
