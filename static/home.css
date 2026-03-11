@@ -360,8 +360,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   width: 100%;
   max-width: 100%;
   height: auto;
-  aspect-ratio: 1;
-  object-fit: cover;
+  object-fit: contain;
   border: 1px solid #ccc;
   display: block;
   border-radius: 6px;
