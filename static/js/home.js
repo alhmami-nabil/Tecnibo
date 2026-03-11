@@ -564,7 +564,7 @@ function checkExactSize(input, previewId, errorId, index) {
         const preview  = document.getElementById(previewId);
         const errorMsg = document.getElementById(errorId);
         let rw, rh;
-        if (index === 'variantes')          { rw = 300;  rh = 200; }
+        if (index === 'variantes')          { rw = 300;  rh = 300; }
         else if (index === 'photo_produit') { rw = 1000; rh = 700; }
         else if (index <= 5)                { rw = 400;  rh = 300; }
         else                                { rw = 300;  rh = 940; }
