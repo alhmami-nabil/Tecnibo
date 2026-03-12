@@ -92,7 +92,9 @@
         <div class="variant-grid">
           <div class="variant-item variant-style-b">
             <img src="{{ url_for('static', filename=fiche.variant_image) }}" class="variant-img">
+            {% if fiche.variant_name %}
             <div class="variant-label">{{ fiche.variant_name }}</div>
+            {% endif %}
           </div>
         </div>
       </div>
