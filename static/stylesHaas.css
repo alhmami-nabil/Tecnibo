@@ -546,8 +546,8 @@ main {
 }
 
 .variant-style-b .variant-img {
-  width: 130px;
-  height: 90px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
 }
 
