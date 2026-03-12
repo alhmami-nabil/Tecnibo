@@ -546,9 +546,10 @@ main {
 }
 
 .variant-style-b .variant-img {
-  width: 100px;
-  height: 100px;
+  width: 130px;
+  height: 90px;
   object-fit: contain;
+  object-position: left center;
 }
 
 .variant-style-b .variant-label {
