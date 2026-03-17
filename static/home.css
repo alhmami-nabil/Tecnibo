@@ -346,7 +346,34 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 /* ==========================
    Image Preview - RESPONSIVE - FIXED DELETE BUTTON
 ========================== */
-.image-preview-container,
+.image-preview-container {
+  position: relative;
+  display: inline-block;
+  width: 50%;
+  max-width: 50%;
+  margin-top: 10px;
+  min-height: 50px;
+  overflow: visible;
+}
+
+/* vue éclatée override */
+.image-preview-container:has(#explodedPreview) {
+  width: 28% !important;
+  max-width: 28% !important;
+  display: block !important;
+  margin: 0 auto !important;
+  overflow: visible;
+}
+
+#explodedPreview {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  aspect-ratio: 7 / 9;
+  display: block;
+}
+
 .image-preview-container2 {
   position: relative;
   display: inline-block;
@@ -354,6 +381,7 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   max-width: 25%;
   margin-top: 10px;
   min-height: 50px;
+  overflow: visible;
 }
 
 .preview-image {
@@ -379,45 +407,43 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
   display: block;
 }
 
+/* Delete button — hidden by default, center top on ALL images */
 .delete-image-btn {
   position: absolute;
-  top: 5px;
-  right: 5px;
+  top: -14px;
+  left: 50%;
+  right: auto;
+  transform: translateX(-50%);
   background-color: #dc3545;
   color: white;
-  border: none;
+  border: 2px solid #fff;
   border-radius: 50%;
-  width: 32px;
-  height: 32px;
-  font-size: 20px;
+  width: 28px;
+  height: 28px;
+  font-size: 16px;
   font-weight: bold;
   cursor: pointer;
   display: none;
-  line-height: 32px;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
   padding: 0;
   z-index: 10;
   transition: all 0.2s;
-  text-align: center;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
 }
 
+/* Show button only when container has a visible image (not d-none) */
+.image-preview-container:hover:has(.preview:not(.d-none)) .delete-image-btn,
+.image-preview-container2:hover:has(.preview:not(.d-none)) .delete-image-btn {
+  display: flex;
+}
+
+/* Hover keep centered + scale */
 .delete-image-btn:hover {
   background-color: #c82333;
-  transform: scale(1.1);
-}
-
-/* Show delete button when hovering over the image */
-.preview:hover + .delete-image-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Keep button visible when hovering over the button itself */
-.delete-image-btn:hover {
+  transform: translateX(-50%) scale(1.1);
   display: flex !important;
-  align-items: center;
-  justify-content: center;
 }
 
 .preview.deleted {
@@ -429,7 +455,6 @@ input[type="file"].form-control::-webkit-file-upload-button:hover {
 .d-none {
   display: none !important;
 }
-
 /* ==========================
    Row Spacing - RESPONSIVE
 ========================== */

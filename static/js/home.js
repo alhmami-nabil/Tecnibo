@@ -65,11 +65,18 @@ window.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         e.stopImmediatePropagation();
 
-        const formAction = btn.getAttribute('formaction') || form.action;
-        // Detect whether this is an add or update action so _flushAnnotationsToServer
-        // reads the CPID from the correct field (#cpid for add, #updateRef for update)
-        const submitAction = (typeof formAction === 'string' && formAction.includes('add_fiche'))
-            ? 'add' : 'update';
+        const formAction = btn.getAttribute('formaction') || form.action || '';
+
+        // ── FIX: Detect add vs update more robustly ──
+        // Check formaction attribute, form action URL, form id, and button name/id
+        const isAdd = (
+            formAction.includes('add_fiche') ||
+            (form.id && form.id.toLowerCase().includes('add')) ||
+            (btn.name && btn.name.toLowerCase().includes('add')) ||
+            (btn.id && btn.id.toLowerCase().includes('add'))
+        );
+        const submitAction = isAdd ? 'add' : 'update';
+
         _flushAnnotationsToServer(base, submitAction, function () {
             if (formAction) form.action = formAction;
             form.submit();
@@ -194,10 +201,11 @@ function _setImagePreview(previewId, imagePath) {
 }
 
 // ============================================
-// Get current CPID
+// Get current CPID — FIXED
+//
 // action: 'add'    → read from #cpid text input (new record)
 //         'update' → read from #updateRef dropdown (existing record)
-//         null     → auto-detect: prefer #cpid if non-empty, else #updateRef
+//         null     → auto-detect: try #cpid first, then #updateRef
 // ============================================
 function _getCurrentCpid(action) {
     const cpidInput = document.getElementById('cpid');
@@ -205,14 +213,21 @@ function _getCurrentCpid(action) {
 
     if (action === 'add') {
         // Adding a new record — the target CPID is always in the text input
-        return cpidInput && cpidInput.value.trim() ? cpidInput.value.trim() : '';
-    }
-    if (action === 'update') {
-        // Updating an existing record — CPID comes from the dropdown
+        const val = cpidInput && cpidInput.value.trim();
+        if (val) return val;
+        // Fallback: maybe the page uses updateRef for adds too
         return updateRef && updateRef.value.trim() ? updateRef.value.trim() : '';
     }
-    // Auto: if the user typed a new CPID in the text field, use it;
-    // otherwise fall back to the dropdown selection.
+
+    if (action === 'update') {
+        // Updating an existing record — CPID comes from the dropdown
+        const val = updateRef && updateRef.value.trim();
+        if (val) return val;
+        // Fallback: maybe a text input holds the CPID
+        return cpidInput && cpidInput.value.trim() ? cpidInput.value.trim() : '';
+    }
+
+    // Auto-detect: prefer non-empty text input, then dropdown
     if (cpidInput && cpidInput.value.trim()) return cpidInput.value.trim();
     if (updateRef && updateRef.value.trim()) return updateRef.value.trim();
     return '';
@@ -243,23 +258,12 @@ function _openNewImageInEditor(file) {
 // ============================================
 // Open existing SVG from server in the editor.
 // Loads image + existing annotations into memory — no server write.
-//
-// We do NOT compare CPIDs here because the user may not have typed the
-// new CPID yet. The comparison happens in _flushAnnotationsToServer at
-// submit time, when the final CPID is known for certain.
-//
-// We always extract and store:
-//   - editorFilename   : original SVG basename (e.g. "A123456.svg")
-//   - pendingImageDataUrl : the raw base64 image from inside the SVG
-// That way _flushAnnotationsToServer can decide:
-//   - same CPID  → update editorFilename in place (save_annotations)
-//   - diff CPID  → create new SVG under new CPID (create_exploded_view_with_annotations)
 // ============================================
 function _openEditorFromSVG(svgPath, base) {
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) loadingOverlay.classList.add('active');
     const parts = svgPath.split('/');
-    editorFilename = parts[parts.length - 1]; // e.g. "A123456.svg" — original CPID's file
+    editorFilename = parts[parts.length - 1]; // e.g. "A123456.svg"
 
     // Always clear pendingImageFile — we will re-evaluate at flush time
     pendingImageFile    = null;
@@ -313,32 +317,32 @@ function _openEditorFromSVG(svgPath, base) {
 // ============================================
 // Flush annotations to server just before form submit.
 //
-// Called with the final CPID already set in the form — this is the only
-// place where we compare CPIDs to decide which server path to take.
+// Called with the final CPID already set in the form.
 //
 // Three cases:
-//
 //   A) pendingImageFile set (brand-new file, never uploaded)
 //      → POST /create_exploded_view_with_annotations
-//        Server creates a new SVG named after the target CPID.
-//
 //   B) editorFilename set AND target CPID matches the SVG's CPID
-//      (e.g. editing A123456 and saving as A123456)
-//      → POST /save_annotations  — update the existing SVG in place.
-//
+//      → POST /save_annotations  (update in place)
 //   C) editorFilename set BUT target CPID is DIFFERENT
-//      (e.g. loaded A123456, changed CPID to A654321)
 //      → extract image from pendingImageDataUrl, build a File blob,
-//        POST /create_exploded_view_with_annotations with the new CPID.
-//        The original A123456.svg is left untouched.
+//        POST /create_exploded_view_with_annotations with new CPID.
 // ============================================
 function _flushAnnotationsToServer(base, submitAction, callback) {
     const loadingOverlay = document.getElementById('loadingOverlay');
     if (loadingOverlay) loadingOverlay.classList.add('active');
 
-    // Use submitAction to read CPID from the correct field:
-    // 'add' → #cpid text input   |   'update' → #updateRef dropdown
+    // ── FIX: Read CPID from correct field based on action ──
     const cpid = _getCurrentCpid(submitAction);
+
+    // Debug log — remove after confirming fix
+    console.debug('[flush] submitAction:', submitAction, '| cpid resolved:', cpid);
+
+    if (!cpid) {
+        if (loadingOverlay) loadingOverlay.classList.remove('active');
+        alert('CPID introuvable. Veuillez saisir ou sélectionner une CPID avant de soumettre.');
+        return;
+    }
 
     // Helper: derive expected SVG filename from a CPID string
     // (mirrors werkzeug's secure_filename: keep alphanum, dot, dash, underscore)
@@ -351,7 +355,7 @@ function _flushAnnotationsToServer(base, submitAction, callback) {
         const formData = new FormData();
         formData.append("vue_eclatee_image", pendingImageFile);
         formData.append("annotations", JSON.stringify(editorAnnotations));
-        if (cpid) formData.append("cpid", cpid);
+        formData.append("cpid", cpid);
 
         fetch(`${base}/create_exploded_view_with_annotations`, { method: 'POST', body: formData })
             .then(r => r.json())
@@ -384,7 +388,7 @@ function _flushAnnotationsToServer(base, submitAction, callback) {
     }
 
     // Determine whether target CPID matches the SVG we loaded
-    const targetSvgFilename = cpid ? _cpidToSvgFilename(cpid) : editorFilename;
+    const targetSvgFilename = _cpidToSvgFilename(cpid);
     const isSameCpid = (editorFilename === targetSvgFilename);
 
     if (isSameCpid) {
@@ -414,7 +418,6 @@ function _flushAnnotationsToServer(base, submitAction, callback) {
     } else {
         // ── Case C: different CPID — build a File blob from the stored dataURL
         //    and create a brand-new SVG named after the target CPID.
-        //    The original SVG (editorFilename) is never modified.
         if (!pendingImageDataUrl || !pendingImageDataUrl.startsWith('data:')) {
             if (loadingOverlay) loadingOverlay.classList.remove('active');
             alert('Impossible de créer le SVG: image source introuvable en mémoire.');
@@ -435,7 +438,7 @@ function _flushAnnotationsToServer(base, submitAction, callback) {
         const formData = new FormData();
         formData.append("vue_eclatee_image", imageFile);
         formData.append("annotations", JSON.stringify(editorAnnotations));
-        if (cpid) formData.append("cpid", cpid);
+        formData.append("cpid", cpid);
 
         fetch(`${base}/create_exploded_view_with_annotations`, { method: 'POST', body: formData })
             .then(r => r.json())
@@ -728,7 +731,6 @@ function clearAllAnnotations() {
 // Actual SVG write happens only when the main form is submitted.
 // ============================================
 function saveEditorAnnotations() {
-    // Update the preview thumbnail from canvas so user sees result immediately
     if (editorCanvas) {
         const preview = document.getElementById('explodedPreview');
         if (preview) {
@@ -804,22 +806,24 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    saveBtn.addEventListener('click', function () {
+    if (saveBtn) saveBtn.addEventListener('click', function () {
         if (currentInput)   currentInput.value   = inputFR.value;
         if (currentInputEN) currentInputEN.value  = inputEN.value;
         if (currentInputNL) currentInputNL.value  = inputNL.value;
         closeModal();
     });
-    ignoreBtn.addEventListener('click', closeModal);
-    closeBtn.addEventListener('click', closeModal);
-    modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
+    if (ignoreBtn) ignoreBtn.addEventListener('click', closeModal);
+    if (closeBtn)  closeBtn.addEventListener('click', closeModal);
+    if (modalOverlay) modalOverlay.addEventListener('click', e => { if (e.target === modalOverlay) closeModal(); });
     document.addEventListener('keydown', e => {
-        if (e.key === 'Escape' && modalOverlay.classList.contains('active')) closeModal();
+        if (e.key === 'Escape' && modalOverlay && modalOverlay.classList.contains('active')) closeModal();
     });
     function closeModal() {
-        modalOverlay.classList.remove('active');
+        if (modalOverlay) modalOverlay.classList.remove('active');
         currentField=currentInput=currentInputEN=currentInputNL=null;
-        inputFR.value=inputEN.value=inputNL.value='';
+        if (inputFR) inputFR.value='';
+        if (inputEN) inputEN.value='';
+        if (inputNL) inputNL.value='';
     }
 
     // ── Searchable Dropdown ──
@@ -834,7 +838,7 @@ document.addEventListener('DOMContentLoaded', function () {
         dropdownHeader.addEventListener('click', () => {
             dropdownHeader.classList.toggle('active');
             dropdownMenu.classList.toggle('active');
-            if (dropdownMenu.classList.contains('active')) searchInput.focus();
+            if (dropdownMenu.classList.contains('active') && searchInput) searchInput.focus();
         });
         dropdownHeader.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); dropdownHeader.click(); }
@@ -846,13 +850,15 @@ document.addEventListener('DOMContentLoaded', function () {
             if (item) {
                 document.querySelectorAll('.dropdown-item-custom').forEach(i => i.classList.remove('selected'));
                 item.classList.add('selected');
-                selectedValue.textContent = item.querySelector('span').textContent;
-                hiddenSelect.value = item.dataset.value;
-                if (item.dataset.value) { hiddenSelect.dispatchEvent(new Event('change')); }
-                else { clearForm(); }
-                dropdownHeader.classList.remove('active');
-                dropdownMenu.classList.remove('active');
-                searchInput.value = '';
+                if (selectedValue) selectedValue.textContent = item.querySelector('span').textContent;
+                if (hiddenSelect) {
+                    hiddenSelect.value = item.dataset.value;
+                    if (item.dataset.value) { hiddenSelect.dispatchEvent(new Event('change')); }
+                    else { clearForm(); }
+                }
+                if (dropdownHeader) dropdownHeader.classList.remove('active');
+                if (dropdownMenu)   dropdownMenu.classList.remove('active');
+                if (searchInput)    searchInput.value = '';
                 document.querySelectorAll('.dropdown-item-custom').forEach(i => i.style.display = 'flex');
             }
         });

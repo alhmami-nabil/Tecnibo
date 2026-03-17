@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, session, url_for, jsonify, flash
 import sqlite3
 import os
+import time
 import shutil
 import base64
 from werkzeug.utils import secure_filename
@@ -127,13 +128,18 @@ def calculate_vue_eclatee_count(data):
     return count
 
 
-def save_file(file):
-    """Save uploaded file and return path relative to static folder"""
+def save_file(file, cpid="image", field_name="file"):
     if file and file.filename:
         filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        _, ext = os.path.splitext(filename)
+
+        # Includes both cpid and field name: TEST123_photo_produit_1710672000.jpg
+        unique_filename = f"{cpid}_{field_name}{ext}"
+
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
         file.save(file_path)
-        return f"uploads/{filename}"
+
+        return f"uploads/{unique_filename}"
     return None
 
 
@@ -338,7 +344,7 @@ def add_fiche():
     for f in file_fields:
         file = request.files.get(f)
         if file and file.filename.strip():
-            uploaded = save_file(file)
+            uploaded = save_file(file, cpid=cpid, field_name=f)
             data_fr[f] = uploaded
         else:
             data_fr[f] = previous_images.get(f)
@@ -626,7 +632,6 @@ def create_exploded_view():
     No _original copy is created — the SVG itself is the single source of truth.
     """
     file = request.files.get("vue_eclatee_image")
-    # Get CPID from form data to name the SVG file
     cpid_name = request.form.get("cpid", "").strip()
     base = get_base_url()
 
@@ -644,7 +649,6 @@ def create_exploded_view():
         "redirect": f"{base}/editor/{svg_filename}",
         "filename": svg_filename
     })
-
 
 
 # -------------------- CREATE EXPLODED VIEW WITH ANNOTATIONS (single-shot) --------------------
@@ -790,12 +794,13 @@ def update_fiche():
         "dessin_technique_4", "dessin_technique_5", "dessin_technique_6"
     ]
 
+    # ── FIX: pass cpid=cpid so filenames are CPID_fieldname_timestamp.ext ──
     for f in files:
         delete_flag = request.form.get(f"delete_{f}")
         if delete_flag == "true":
             data_fr[f] = None
         else:
-            uploaded = save_file(request.files.get(f))
+            uploaded = save_file(request.files.get(f), cpid=cpid, field_name=f)
             data_fr[f] = uploaded if uploaded else existing_fr[f]
 
     # ── Vue éclatée (SVG-based) ──
@@ -815,7 +820,7 @@ def update_fiche():
         data_fr["vue_eclatee_image"] = save_vue_eclatee_as_svg(vue_file, cpid=cpid)
     else:
         # No new upload, no valid saved SVG (or stale SVG from different CPID)
-        # Keep the existing image stored in the database — do NOT use stale vue_already_saved
+        # Keep the existing image stored in the database
         old = existing_fr["vue_eclatee_image"]
         data_fr["vue_eclatee_image"] = old if old else None
 
