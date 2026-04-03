@@ -1,10 +1,12 @@
-from flask import Flask, render_template, request, redirect, session, url_for, jsonify, flash
+from flask import Flask, render_template, request, redirect, session, url_for, jsonify, flash, send_file
 import sqlite3
 import os
 import time
 import shutil
 import base64
 from werkzeug.utils import secure_filename
+import openpyxl
+from io import BytesIO
 
 app = Flask(__name__)
 app.secret_key = "supersecretkey"
@@ -19,6 +21,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # Base path configuration
 BASE_PATH = '/tools/fiches'  # Change this to '' if not using subpath
 
+
 # Fields that should NOT be copied (text fields that need translation)
 TRANSLATABLE_FIELDS = {
     'variant', 'description', 'variant_name',
@@ -26,6 +29,7 @@ TRANSLATABLE_FIELDS = {
     'verre', 'battant', 'panneau', 'poids_porte_cloison', 'resistance_feu',
     'nbn_s_01_400', 'nbn_en_iso_717_1'
 }
+
 for i in range(1, 23):
     TRANSLATABLE_FIELDS.add(f'vue_eclatee_{i}')
 for i in range(1, 7):
@@ -973,6 +977,14 @@ def db_editor():
     return render_template("db_editor.html", columns=columns, friendly=friendly, base=base)
 
 
+@app.route('/api/me')
+@app.route(f'{BASE_PATH}/api/me')
+def api_me():
+    if 'user' in session:
+        return jsonify({"authenticated": True, "user": session['user']})
+    return jsonify({"authenticated": False})
+
+
 @app.route('/api/db/rows')
 @app.route(f'{BASE_PATH}/api/db/rows')
 def db_get_rows():
@@ -1020,6 +1032,82 @@ def db_delete_row(row_id):
     return jsonify({"status": "ok"})
 
 
+@app.route('/api/db/export')
+@app.route(f'{BASE_PATH}/api/db/export')
+def db_export():
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    conn = get_db_connection()
+    columns = [row[1] for row in conn.execute("PRAGMA table_info(fiche_technique)").fetchall()]
+    rows = conn.execute("SELECT * FROM fiche_technique ORDER BY id DESC").fetchall()
+    conn.close()
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Fiches Techniques"
+
+    # -- Styles --
+    header_fill = PatternFill(start_color="1A2332", end_color="1A2332", fill_type="solid")
+    header_font = Font(name="Calibri", bold=True, color="FFFFFF", size=11)
+    header_align = Alignment(horizontal="center", vertical="center", wrap_text=True)
+    row_even_fill = PatternFill(start_color="EEF2FF", end_color="EEF2FF", fill_type="solid")
+    row_odd_fill = PatternFill(start_color="FFFFFF", end_color="FFFFFF", fill_type="solid")
+    data_font = Font(name="Calibri", size=10)
+    data_align = Alignment(vertical="center", wrap_text=False)
+    thin_border = Border(
+        left=Side(style="thin", color="D1D5DB"),
+        right=Side(style="thin", color="D1D5DB"),
+        top=Side(style="thin", color="D1D5DB"),
+        bottom=Side(style="thin", color="D1D5DB"),
+    )
+
+    # -- Header row --
+    friendly_headers = [FRIENDLY_NAMES.get(c, c.replace('_', ' ').title()) for c in columns]
+    ws.append(friendly_headers)
+    for col_idx, _ in enumerate(columns, 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_align
+        cell.border = thin_border
+    ws.row_dimensions[1].height = 30
+
+    # -- Data rows --
+    for row_idx, row in enumerate(rows, 2):
+        ws.append(list(row))
+        fill = row_even_fill if row_idx % 2 == 0 else row_odd_fill
+        for col_idx in range(1, len(columns) + 1):
+            cell = ws.cell(row=row_idx, column=col_idx)
+            cell.fill = fill
+            cell.font = data_font
+            cell.alignment = data_align
+            cell.border = thin_border
+
+    # -- Auto-width columns (cap at 40) --
+    for col_idx, col_name in enumerate(columns, 1):
+        max_len = len(friendly_headers[col_idx - 1])
+        for row in ws.iter_rows(min_row=2, max_row=min(ws.max_row, 102), min_col=col_idx, max_col=col_idx):
+            val = row[0].value
+            if val:
+                max_len = max(max_len, len(str(val)))
+        ws.column_dimensions[get_column_letter(col_idx)].width = min(max_len + 3, 40)
+
+    # -- Freeze header row --
+    ws.freeze_panes = "A2"
+
+    # -- Auto-filter on all columns --
+    ws.auto_filter.ref = ws.dimensions
+
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+
+    return send_file(bio, as_attachment=True, download_name="fiches_techniques.xlsx",
+                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+
 # -------------------- RUN --------------------
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
