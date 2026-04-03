@@ -1,20 +1,42 @@
-# Python cache
+# ── Python ──────────────────────────────────────
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+*.pdb
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
 
-# IDE files
-.idea/
-.vscode/
+# ── Virtual environment ──────────────────────────
+venv/
+.venv/
+env/
+.env/
 
-# Database
+# ── Environment variables ────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Database (production DB stays on the server) ─
 *.db
+*.sqlite
+*.sqlite3
 
-# Temporary / OS files
+# ── Exports / generated files ────────────────────
+*.csv
 *.log
 *.tmp
 temp.ps
 
-# Uploads folder (do not push to server)
+# ── Uploads (managed on server, not in git) ──────
 static/uploads/
+
+# ── IDE / OS ─────────────────────────────────────
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

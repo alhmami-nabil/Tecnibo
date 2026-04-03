@@ -186,6 +186,7 @@ function _resetEditorState() {
 // ============================================
 // Image preview helper
 // ============================================
+
 function _setImagePreview(previewId, imagePath) {
     const img = document.getElementById(previewId);
     if (!img) return;
@@ -238,6 +239,7 @@ function _getCurrentCpid(action) {
 // Reads the file as a dataURL — zero server calls.
 // The file is stored in pendingImageFile for later upload.
 // ============================================
+
 function _openNewImageInEditor(file) {
     const reader = new FileReader();
     reader.onload = function (e) {

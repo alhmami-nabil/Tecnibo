@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fiches Techniques - Base de Données</title>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+    <style>
+        body { background: #f4f6f9; font-family: 'Segoe UI', sans-serif; }
+        .top-bar { background: #1a2332; color: #fff; padding: 18px 30px; display: flex; align-items: center; justify-content: space-between; }
+        .top-bar h1 { font-size: 1.3rem; margin: 0; font-weight: 600; }
+        .top-bar .badge { background: #3b82f6; font-size: 0.8rem; margin-left: 10px; }
+        .top-bar .user-info { font-size: 0.85rem; color: #94a3b8; }
+        .top-bar .user-info strong { color: #fff; }
+        .card { border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+        .table-container { padding: 20px 24px; overflow-x: auto; }
+        #dbTable { font-size: 0.82rem; }
+        #dbTable th { background: #f0f3f8; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; color: #475569; white-space: nowrap; position: sticky; top: 0; }
+        #dbTable td { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; vertical-align: middle; }
+        #dbTable td:hover { background: #eef2ff; }
+        #dbTable td.editing { background: #fff; overflow: visible; white-space: normal; }
+        #dbTable td.editing input, #dbTable td.editing textarea { width: 100%; border: 2px solid #3b82f6; border-radius: 4px; padding: 4px 6px; font-size: 0.82rem; outline: none; }
+        .btn-add { background: #22c55e; border: none; color: #fff; font-weight: 600; }
+        .btn-add:hover { background: #16a34a; color: #fff; }
+        .btn-del { color: #ef4444; background: none; border: none; font-size: 1rem; cursor: pointer; padding: 2px 6px; }
+        .btn-del:hover { background: #fee2e2; border-radius: 4px; }
+        .dataTables_filter input { border-radius: 8px; border: 1px solid #cbd5e1; padding: 6px 12px; }
+        .dataTables_length select { border-radius: 6px; border: 1px solid #cbd5e1; padding: 4px 8px; }
+        .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; }
+        .stats { display: flex; gap: 16px; margin-bottom: 16px; }
+        .stat-box { background: #fff; border-radius: 10px; padding: 14px 20px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); min-width: 130px; }
+        .stat-box .num { font-size: 1.5rem; font-weight: 700; color: #1e293b; }
+        .stat-box .label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
+        .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 10000; }
+        .spinner { width: 48px; height: 48px; border: 4px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin 0.8s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .hidden-col { display: none; }
+        .col-toggle-panel { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 1px 6px rgba(0,0,0,0.05); margin-bottom: 16px; display: none; }
+        .col-toggle-panel.open { display: block; }
+        .col-toggle-panel label { font-size: 0.8rem; margin-right: 12px; cursor: pointer; }
+        /* Auth denied overlay */
+        .auth-denied { position: fixed; inset: 0; background: #f4f6f9; display: flex; align-items: center; justify-content: center; z-index: 20000; }
+        .auth-denied-box { text-align: center; max-width: 400px; }
+        .auth-denied-box .icon { font-size: 3rem; margin-bottom: 16px; }
+        .auth-denied-box h2 { color: #1e293b; margin-bottom: 8px; }
+        .auth-denied-box p { color: #64748b; margin-bottom: 20px; }
+        /* Delete confirmation modal */
+        .modal-backdrop-custom { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 15000; display: flex; align-items: center; justify-content: center; }
+        .delete-modal { background: #fff; border-radius: 12px; padding: 28px; max-width: 420px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.15); }
+        .delete-modal h3 { color: #dc2626; font-size: 1.1rem; margin-bottom: 12px; }
+        .delete-modal p { font-size: 0.9rem; color: #475569; margin-bottom: 16px; }
+        .delete-modal input { width: 100%; border: 2px solid #e2e8f0; border-radius: 8px; padding: 8px 12px; font-size: 0.9rem; margin-bottom: 16px; }
+        .delete-modal input:focus { border-color: #ef4444; outline: none; }
+        .delete-modal .actions { display: flex; gap: 10px; justify-content: flex-end; }
+        .delete-modal .btn-cancel { background: #f1f5f9; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; }
+        .delete-modal .btn-confirm-del { background: #dc2626; color: #fff; border: none; padding: 8px 18px; border-radius: 8px; cursor: pointer; opacity: 0.4; pointer-events: none; }
+        .delete-modal .btn-confirm-del.enabled { opacity: 1; pointer-events: auto; }
+    </style>
+</head>
+<body>
+
+<!-- Auth denied screen (hidden by default) -->
+<div class="auth-denied" id="authDenied" style="display:none;">
+    <div class="auth-denied-box">
+        <div class="icon">&#128274;</div>
+        <h2>Accès refusé</h2>
+        <p>Vous devez être connecté pour accéder à cette page.</p>
+        <a href="/" class="btn btn-primary">Se connecter</a>
+    </div>
+</div>
+
+<!-- Loading overlay -->
+<div class="loading-overlay" id="loader">
+    <div class="text-center">
+        <div class="spinner mx-auto mb-3"></div>
+        <div style="color:#64748b;">Vérification de l'accès...</div>
+    </div>
+</div>
+
+<!-- Main app (hidden until auth passes) -->
+<div id="mainApp" style="display:none;">
+    <div class="top-bar">
+        <div style="display:flex;align-items:center;">
+            <h1>Base de Données - Fiches Techniques</h1>
+            <span class="badge" id="rowCount">...</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:16px;">
+            <span class="user-info" id="userInfo"></span>
+            <button class="btn btn-sm btn-outline-light" onclick="toggleColumns()">Colonnes</button>
+            <button class="btn btn-sm btn-add" onclick="addRow()">+ Ajouter</button>
+        </div>
+    </div>
+
+    <div class="container-fluid" style="padding: 24px;">
+        <div class="col-toggle-panel" id="colPanel">
+            <strong style="font-size:0.85rem;">Afficher / Masquer les colonnes :</strong>
+            <div id="colToggles" style="margin-top:8px; display:flex; flex-wrap:wrap; gap: 4px 0;"></div>
+        </div>
+
+        <div class="stats" id="statsBar"></div>
+
+        <div class="card">
+            <div class="table-container">
+                <table id="dbTable" class="table table-striped table-hover" style="width:100%">
+                    <thead><tr id="headerRow"></tr></thead>
+                    <tbody id="tableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete confirmation modal -->
+<div class="modal-backdrop-custom" id="deleteModal" style="display:none;">
+    <div class="delete-modal">
+        <h3>Supprimer cette ligne ?</h3>
+        <p>Cette action est <strong>irréversible</strong>. La ligne <strong>ID <span id="delRowId"></span></strong> sera définitivement supprimée.</p>
+        <p style="font-size:0.82rem;color:#94a3b8;">Tapez <strong>SUPPRIMER</strong> pour confirmer :</p>
+        <input type="text" id="delConfirmInput" placeholder="Tapez SUPPRIMER" autocomplete="off">
+        <div class="actions">
+            <button class="btn-cancel" onclick="closeDeleteModal()">Annuler</button>
+            <button class="btn-confirm-del" id="delConfirmBtn" onclick="confirmDelete()">Supprimer</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script>
+const BASE = "{{ base }}";
+const COLUMNS = {{ columns | tojson }};
+const FRIENDLY = {{ friendly | tojson }};
+const DEFAULT_VISIBLE = ['id','cpid','reference','reference_menu','variant','langue','type','description','hauteur','largeur','epaisseur'];
+
+let dt = null;
+let allData = [];
+let hiddenCols = new Set();
+let pendingDeleteId = null;
+
+COLUMNS.forEach(c => {
+    if (!DEFAULT_VISIBLE.includes(c)) hiddenCols.add(c);
+});
+
+// ==================== AUTH CHECK ====================
+async function checkAuth() {
+    try {
+        const res = await fetch('/api/me', { credentials: 'include' });
+        if (!res.ok) throw new Error('not authenticated');
+        const data = await res.json();
+        if (!data.authenticated) throw new Error('not authenticated');
+        // Show user name in top bar
+        const name = data.user?.name || data.user?.email || '';
+        if (name) {
+            document.getElementById('userInfo').innerHTML = 'Connecté : <strong>' + name + '</strong>';
+        }
+        return true;
+    } catch (e) {
+        return false;
+    }
+}
+
+async function init() {
+    const authed = await checkAuth();
+    document.getElementById('loader').style.display = 'none';
+    if (!authed) {
+        document.getElementById('authDenied').style.display = 'flex';
+        return;
+    }
+    document.getElementById('mainApp').style.display = 'block';
+    // Show loading again for data
+    document.getElementById('loader').style.display = 'flex';
+    document.querySelector('#loader div > div:last-child').textContent = 'Chargement des données...';
+    loadData();
+}
+
+init();
+
+// ==================== DELETE MODAL ====================
+function openDeleteModal(id) {
+    pendingDeleteId = id;
+    document.getElementById('delRowId').textContent = id;
+    document.getElementById('delConfirmInput').value = '';
+    document.getElementById('delConfirmBtn').classList.remove('enabled');
+    document.getElementById('deleteModal').style.display = 'flex';
+    document.getElementById('delConfirmInput').focus();
+}
+
+function closeDeleteModal() {
+    pendingDeleteId = null;
+    document.getElementById('deleteModal').style.display = 'none';
+}
+
+document.getElementById('delConfirmInput').addEventListener('input', function() {
+    const btn = document.getElementById('delConfirmBtn');
+    if (this.value.trim() === 'SUPPRIMER') btn.classList.add('enabled');
+    else btn.classList.remove('enabled');
+});
+
+function confirmDelete() {
+    if (!pendingDeleteId) return;
+    const id = pendingDeleteId;
+    closeDeleteModal();
+    fetch(`${BASE}/api/db/row/${id}`, {method: 'DELETE'})
+        .then(r => {
+            if (r.ok) { toast('Ligne supprimée'); loadData(); }
+            else toast('Erreur', 'danger');
+        });
+}
+
+// ==================== UTILS ====================
+function toast(msg, type='success') {
+    const el = document.createElement('div');
+    el.className = `alert alert-${type} py-2 px-3`;
+    el.style.cssText = 'font-size:0.85rem;min-width:200px;animation:fadeIn 0.3s;';
+    el.textContent = msg;
+    document.getElementById('toasts').appendChild(el);
+    setTimeout(() => el.remove(), 2500);
+}
+
+function toggleColumns() {
+    document.getElementById('colPanel').classList.toggle('open');
+}
+
+function buildColToggles() {
+    const container = document.getElementById('colToggles');
+    container.innerHTML = '';
+    COLUMNS.forEach((col, i) => {
+        if (col === 'id') return;
+        const label = document.createElement('label');
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = !hiddenCols.has(col);
+        cb.style.marginRight = '4px';
+        cb.onchange = () => {
+            if (cb.checked) hiddenCols.delete(col);
+            else hiddenCols.add(col);
+            const dtCol = dt.column(i + 1);
+            dtCol.visible(cb.checked);
+        };
+        label.appendChild(cb);
+        label.appendChild(document.createTextNode(FRIENDLY[col] || col));
+        container.appendChild(label);
+    });
+}
+
+function renderStats(data) {
+    const bar = document.getElementById('statsBar');
+    const langs = {};
+    const types = {};
+    data.forEach(r => {
+        langs[r.langue || 'N/A'] = (langs[r.langue || 'N/A'] || 0) + 1;
+        types[r.type || 'N/A'] = (types[r.type || 'N/A'] || 0) + 1;
+    });
+    let html = `<div class="stat-box"><div class="num">${data.length}</div><div class="label">Total lignes</div></div>`;
+    Object.entries(langs).sort((a,b) => b[1]-a[1]).forEach(([k,v]) => {
+        html += `<div class="stat-box"><div class="num">${v}</div><div class="label">${k.toUpperCase()}</div></div>`;
+    });
+    Object.entries(types).sort((a,b) => b[1]-a[1]).slice(0,4).forEach(([k,v]) => {
+        html += `<div class="stat-box"><div class="num">${v}</div><div class="label">${k}</div></div>`;
+    });
+    bar.innerHTML = html;
+}
+
+function makeEditable(td, rowData, col) {
+    if (col === 'id') return;
+    const current = rowData[col] || '';
+    td.classList.add('editing');
+    const isLong = current.length > 60;
+    const input = document.createElement(isLong ? 'textarea' : 'input');
+    input.value = current;
+    if (isLong) input.rows = 3;
+    td.textContent = '';
+    td.appendChild(input);
+    input.focus();
+    input.select();
+
+    const save = () => {
+        const newVal = input.value;
+        td.classList.remove('editing');
+        td.textContent = newVal;
+        td.title = newVal;
+        if (newVal !== current) {
+            rowData[col] = newVal;
+            fetch(`${BASE}/api/db/row/${rowData.id}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({[col]: newVal})
+            }).then(r => {
+                if (r.ok) toast('Sauvegardé');
+                else toast('Erreur de sauvegarde', 'danger');
+            });
+        }
+    };
+    input.onblur = save;
+    input.onkeydown = (e) => {
+        if (e.key === 'Enter' && !isLong) save();
+        if (e.key === 'Escape') { td.classList.remove('editing'); td.textContent = current; td.title = current; }
+    };
+}
+
+function addRow() {
+    const data = {cpid: 'NOUVEAU', reference: '', reference_menu: '', langue: 'fr'};
+    fetch(`${BASE}/api/db/row`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    }).then(r => {
+        if (r.ok) { toast('Ligne ajoutée'); loadData(); }
+        else toast('Erreur', 'danger');
+    });
+}
+
+function loadData() {
+    fetch(`${BASE}/api/db/rows`)
+        .then(r => r.json())
+        .then(data => {
+            allData = data;
+            document.getElementById('rowCount').textContent = data.length + ' lignes';
+            renderStats(data);
+
+            if (dt) dt.destroy();
+            document.getElementById('headerRow').innerHTML =
+                '<th style="width:40px;"></th>' +
+                COLUMNS.map(c => `<th>${FRIENDLY[c] || c}</th>`).join('');
+
+            const rows = data.map(row => {
+                const arr = ['<button class="btn-del" onclick="openDeleteModal(' + row.id + ')" title="Supprimer">&times;</button>'];
+                COLUMNS.forEach(col => {
+                    arr.push(row[col] != null ? String(row[col]) : '');
+                });
+                return arr;
+            });
+
+            dt = $('#dbTable').DataTable({
+                data: rows,
+                pageLength: 25,
+                lengthMenu: [10, 25, 50, 100, 500],
+                order: [[1, 'desc']],
+                scrollX: true,
+                language: {
+                    search: "Rechercher :",
+                    lengthMenu: "Afficher _MENU_ lignes",
+                    info: "_START_ - _END_ sur _TOTAL_",
+                    paginate: { previous: "Préc.", next: "Suiv." },
+                    zeroRecords: "Aucun résultat",
+                },
+                columnDefs: [
+                    { orderable: false, targets: 0 },
+                    ...COLUMNS.map((c, i) => ({
+                        visible: !hiddenCols.has(c),
+                        targets: i + 1
+                    }))
+                ],
+                createdRow: function(tr, rowArr, dataIndex) {
+                    const row = data[dataIndex];
+                    tr.querySelectorAll('td').forEach((td, i) => {
+                        if (i === 0) return;
+                        const col = COLUMNS[i - 1];
+                        td.title = td.textContent;
+                        td.ondblclick = () => makeEditable(td, row, col);
+                    });
+                }
+            });
+
+            buildColToggles();
+            document.getElementById('loader').style.display = 'none';
+        });
+}
+</script>
+</body>
+</html>

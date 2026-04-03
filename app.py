@@ -942,6 +942,84 @@ def index():
         return render_template("indexHaas.html", fiche=fiche, lang="fr", base=base, type=product_type, cpid=cpid)
 
 
+# -------------------- DB EDITOR --------------------
+FRIENDLY_NAMES = {
+    'id': 'ID', 'cpid': 'CPID', 'reference': 'Référence', 'reference_menu': 'Réf. Menu',
+    'variant': 'Variante', 'langue': 'Langue', 'type': 'Type', 'description': 'Description',
+    'photo_produit': 'Photo Produit', 'hauteur': 'Hauteur', 'largeur': 'Largeur',
+    'epaisseur': 'Épaisseur', 'epaisseur_battent': 'Ép. Battant', 'tolerance_hauteur': 'Tolérance H.',
+    'verre': 'Verre', 'battant': 'Battant', 'panneau': 'Panneau',
+    'poids_porte_cloison': 'Poids', 'resistance_feu': 'Résistance Feu',
+    'nbn_s_01_400': 'NBN S 01-400', 'nbn_en_iso_717_1': 'NBN EN ISO 717-1',
+    'vue_eclatee_image': 'Vue Éclatée Image', 'vue_eclatee_count': 'Nb. Vues Éclatées',
+    'variant_image': 'Image Variante', 'variant_name': 'Nom Variante',
+}
+for i in range(1, 23):
+    FRIENDLY_NAMES[f'vue_eclatee_{i}'] = f'Vue Éclatée {i}'
+for i in range(1, 7):
+    FRIENDLY_NAMES[f'dessin_technique_{i}'] = f'Dessin Tech. {i}'
+    FRIENDLY_NAMES[f'dessin_technique_nom_{i}'] = f'Nom Dessin Tech. {i}'
+
+
+@app.route('/db=FicheTechnique.db')
+@app.route(f'{BASE_PATH}/db=FicheTechnique.db')
+def db_editor():
+    base = get_base_url()
+    conn = get_db_connection()
+    cursor = conn.execute("PRAGMA table_info(fiche_technique)")
+    columns = [row[1] for row in cursor.fetchall()]
+    conn.close()
+    friendly = {col: FRIENDLY_NAMES.get(col, col.replace('_', ' ').title()) for col in columns}
+    return render_template("db_editor.html", columns=columns, friendly=friendly, base=base)
+
+
+@app.route('/api/db/rows')
+@app.route(f'{BASE_PATH}/api/db/rows')
+def db_get_rows():
+    conn = get_db_connection()
+    rows = conn.execute("SELECT * FROM fiche_technique ORDER BY id DESC").fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in rows])
+
+
+@app.route('/api/db/row', methods=['POST'])
+@app.route(f'{BASE_PATH}/api/db/row', methods=['POST'])
+def db_add_row():
+    data = request.get_json()
+    conn = get_db_connection()
+    cols = [k for k in data.keys() if k != 'id']
+    vals = [data[k] for k in cols]
+    placeholders = ','.join(['?'] * len(cols))
+    col_names = ','.join(cols)
+    conn.execute(f"INSERT INTO fiche_technique ({col_names}) VALUES ({placeholders})", vals)
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+
+@app.route('/api/db/row/<int:row_id>', methods=['POST'])
+@app.route(f'{BASE_PATH}/api/db/row/<int:row_id>', methods=['POST'])
+def db_update_row(row_id):
+    data = request.get_json()
+    conn = get_db_connection()
+    for key, value in data.items():
+        if key != 'id':
+            conn.execute(f"UPDATE fiche_technique SET [{key}]=? WHERE id=?", (value, row_id))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+
+@app.route('/api/db/row/<int:row_id>', methods=['DELETE'])
+@app.route(f'{BASE_PATH}/api/db/row/<int:row_id>', methods=['DELETE'])
+def db_delete_row(row_id):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM fiche_technique WHERE id=?", (row_id,))
+    conn.commit()
+    conn.close()
+    return jsonify({"status": "ok"})
+
+
 # -------------------- RUN --------------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
