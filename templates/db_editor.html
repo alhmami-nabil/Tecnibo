@@ -238,15 +238,12 @@ COLUMNS.forEach(c => {
 
 // ==================== AUTH CHECK ====================
 async function checkAuth() {
-    return true; // For testing
-    /*
     try {
         const res = await fetch('/api/me', { credentials: 'include' });
-        if (!res.ok) throw new Error('not authenticated');
+        if (!res.ok) return false;
         const data = await res.json();
-        if (!data.authenticated) throw new Error('not authenticated');
-        // Show user name in top bar
-        const name = data.user?.name || data.user?.email || '';
+        if (!data.authenticated) return false;
+        const name = data.user?.name || data.user?.email || data.user?.login || '';
         if (name) {
             document.getElementById('userInfo').innerHTML = 'Connecté : <strong>' + name + '</strong>';
         }
@@ -254,7 +251,6 @@ async function checkAuth() {
     } catch (e) {
         return false;
     }
-    */
 }
 
 async function init() {
